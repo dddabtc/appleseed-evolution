@@ -1,5 +1,7 @@
 # Atlas Evolution — 自进化Agent系统
 
+[🇬🇧 English](README.md)
+
 **[Atlas](https://github.com/dddabtc/atlas) 第六子系统**
 
 自进化系统使AI Agent能够通过反馈回路、强化学习和进化优化，自主提升自身的能力、记忆、提示词和工作流。

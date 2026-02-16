@@ -1,5 +1,7 @@
 # Atlas Evolution — Self-Evolving Agent System
 
+[🇨🇳 中文文档](README_zh.md)
+
 **Subsystem 6 of [Atlas](https://github.com/dddabtc/atlas)**
 
 A self-evolving system that enables AI agents to autonomously improve their capabilities, memory, prompts, and workflows through feedback loops, reinforcement, and evolutionary optimization.
