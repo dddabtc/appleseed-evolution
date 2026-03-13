@@ -7,8 +7,10 @@ import sys
 from atlas_evolution.config import load_config, write_default_config
 from atlas_evolution.evolution.governance import (
     build_governance_payload,
-    build_governance_summary,
+    build_operator_review_payload,
     render_governance_markdown,
+    render_operator_review_markdown,
+    render_promotion_markdown,
 )
 from atlas_evolution.models import EvolutionReport
 from atlas_evolution.runtime.orchestrator import AtlasOrchestrator
@@ -86,11 +88,25 @@ def build_parser() -> argparse.ArgumentParser:
     governance_parser.add_argument("--format", choices=["json", "markdown"], default="json")
     governance_parser.add_argument("--write-report", action="store_true")
 
+    review_parser = subparsers.add_parser(
+        "review",
+        help="Build an operator review queue with ready, risky, rollback-sensitive, and blocked proposals.",
+    )
+    review_parser.add_argument("--config", default="demo/atlas.toml")
+    review_parser.add_argument("--report")
+    review_parser.add_argument("--format", choices=["json", "markdown"], default="json")
+    review_parser.add_argument("--write-report", action="store_true")
+
     promote_parser = subparsers.add_parser(
         "promote",
         help="Apply only proposals that passed the evaluation gate.",
     )
     promote_parser.add_argument("--config", default="demo/atlas.toml")
+    promote_parser.add_argument("--report")
+    promote_parser.add_argument("--proposal-id", action="append", default=[])
+    promote_parser.add_argument("--dry-run", action="store_true")
+    promote_parser.add_argument("--format", choices=["json", "markdown"], default="json")
+    promote_parser.add_argument("--write-report", action="store_true")
 
     serve_parser = subparsers.add_parser("serve", help="Run the local HTTP proxy surface.")
     serve_parser.add_argument("--config", default="demo/atlas.toml")
@@ -262,21 +278,55 @@ def cmd_governance(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_review(args: argparse.Namespace) -> int:
+    orchestrator = AtlasOrchestrator.from_config_path(args.config)
+    report, report_path = _load_evolution_report(orchestrator, args.report)
+    if args.format == "markdown":
+        rendered = render_operator_review_markdown(report, orchestrator.skill_bank)
+        if args.write_report:
+            output_path = orchestrator.feedback_store.write_text_report(
+                "latest_operator_review.md",
+                rendered,
+            )
+            print(rendered, end="")
+            print(f"\nReport path: {output_path}")
+            return 0
+        print(rendered, end="")
+        return 0
+    payload = build_operator_review_payload(report, orchestrator.skill_bank)
+    payload["report_path"] = str(report_path)
+    if args.write_report:
+        output_path = orchestrator.feedback_store.write_report("latest_operator_review.json", payload)
+        payload["operator_review_report_path"] = str(output_path)
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
 def cmd_promote(args: argparse.Namespace) -> int:
     orchestrator = AtlasOrchestrator.from_config_path(args.config)
-    report, report_path = _load_evolution_report(orchestrator)
-    changed = orchestrator.pipeline.promote_approved(report)
-    governance_summary = build_governance_summary(report)
-    print(
-        json.dumps(
-            {
-                "source_report": str(report_path),
-                "promoted_files": [str(path) for path in changed],
-                "governance_summary": governance_summary,
-            },
-            indent=2,
-        )
+    report, report_path = _load_evolution_report(orchestrator, args.report)
+    payload = orchestrator.pipeline.build_promotion_artifact(
+        report,
+        proposal_ids=list(args.proposal_id),
+        source_report=report_path,
+        apply_changes=not args.dry_run,
     )
+    if args.format == "markdown":
+        rendered = render_promotion_markdown(payload)
+        if args.write_report:
+            output_path = orchestrator.feedback_store.write_text_report(
+                "latest_promotion_artifact.md",
+                rendered,
+            )
+            print(rendered, end="")
+            print(f"\nReport path: {output_path}")
+            return 0
+        print(rendered, end="")
+        return 0
+    if args.write_report:
+        output_path = orchestrator.feedback_store.write_report("latest_promotion_artifact.json", payload)
+        payload["promotion_artifact_path"] = str(output_path)
+    print(json.dumps(payload, indent=2))
     return 0
 
 
@@ -304,6 +354,7 @@ def main(argv: list[str] | None = None) -> int:
         "inspect": cmd_inspect,
         "evolve": cmd_evolve,
         "governance": cmd_governance,
+        "review": cmd_review,
         "promote": cmd_promote,
         "serve": cmd_serve,
     }

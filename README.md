@@ -75,7 +75,9 @@ Implemented in v1.1:
 - heuristic workflow and capability proposals
 - offline evaluation gate
 - explicit gate policy, readiness, risk, and rollback metadata on proposals
+- operator review queue with ready, risky, rollback-sensitive, and blocked proposal buckets
 - explicit promotion step for approved prompt updates
+- reviewable promotion artifacts with diff previews, rollback steps, dry-run support, and per-proposal targeting
 - operator-facing governance inspection command
 - local HTTP endpoints for route, feedback, and ingest
 
@@ -179,11 +181,35 @@ python3 -m atlas_evolution.cli governance \
   --write-report
 ```
 
-Apply only approved prompt updates:
+Build the operator review queue with promotion commands and diff previews:
 
 ```bash
-python3 -m atlas_evolution.cli promote --config demo/atlas.toml
+python3 -m atlas_evolution.cli review \
+  --config demo/atlas.toml \
+  --format markdown \
+  --write-report
 ```
+
+Dry-run a specific approved proposal before touching local assets:
+
+```bash
+python3 -m atlas_evolution.cli promote \
+  --config demo/atlas.toml \
+  --proposal-id prompt-code_review \
+  --dry-run \
+  --write-report
+```
+
+Apply only approved prompt updates after review:
+
+```bash
+python3 -m atlas_evolution.cli promote \
+  --config demo/atlas.toml \
+  --proposal-id prompt-code_review \
+  --write-report
+```
+
+The conservative operator chain is: `evolve -> governance/review -> promote`.
 
 ## Local Proxy
 
@@ -258,6 +284,23 @@ Each ingested item is handled in two stages:
 - Atlas can also turn one or more runtime payloads into a session evidence bundle artifact in `state/reports/`
 
 The evolution pipeline consumes direct operator feedback plus projected feedback records. It does not consume raw envelopes directly.
+
+## Operator Review Workflow
+
+The governed promotion path is intentionally split into separate local steps:
+
+1. `evolve` writes `latest_evolution_report.json` with proposal and gate results.
+2. `governance` gives a compact readiness/risk/rollback summary.
+3. `review` expands that into an operator queue with:
+   - `ready` proposals that passed the gate
+   - `risky` ready proposals that still deserve closer inspection
+   - `rollback_sensitive` proposals that touch a local asset and include explicit revert steps
+   - `operator_review_required` proposals with no automatic promotion path
+   - `blocked` proposals that failed the gate
+4. `promote --dry-run` builds a deterministic promotion artifact before any file change.
+5. `promote` applies only approved `prompt_update` proposals and records what was applied, skipped, and how to roll back.
+
+For a more detailed walkthrough, see [docs/operator_review_workflow.md](docs/operator_review_workflow.md).
 
 The compatibility parser still accepts the older flat runtime-event shape so existing local demo flows do not break.
 
