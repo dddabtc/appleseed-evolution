@@ -7,6 +7,10 @@ from atlas_evolution.config import AtlasConfig, load_config
 from atlas_evolution.feedback_store import FeedbackStore
 from atlas_evolution.models import FeedbackRecord, ProjectedFeedbackRecord
 from atlas_evolution.openclaw_contract import OpenClawAtlasEventEnvelope, parse_openclaw_atlas_event_envelopes
+from atlas_evolution.runtime.openclaw_adapter import (
+    adapt_openclaw_operator_session_artifact,
+    build_openclaw_operator_handoff_payload,
+)
 from atlas_evolution.runtime.report_adapter import RuntimeSessionReportAdapter
 from atlas_evolution.skill_bank import SkillBank
 
@@ -89,6 +93,25 @@ class AtlasOrchestrator:
             if projected is not None:
                 projected_records.append(projected)
         return envelopes, projected_records
+
+    def import_openclaw_operator_session(
+        self,
+        payload: object,
+    ) -> tuple[dict[str, object], list[OpenClawAtlasEventEnvelope], list[ProjectedFeedbackRecord]]:
+        artifact, envelopes = adapt_openclaw_operator_session_artifact(payload)
+        projected_records: list[ProjectedFeedbackRecord] = []
+        for envelope in envelopes:
+            projected = self.feedback_store.record_runtime_ingest(envelope)
+            if projected is not None:
+                projected_records.append(projected)
+        handoff = build_openclaw_operator_handoff_payload(
+            artifact,
+            config_path=self.config.paths.config_file,
+            state_dir=self.config.paths.state_dir,
+            envelopes=envelopes,
+            projected_records=projected_records,
+        )
+        return handoff, envelopes, projected_records
 
     def build_runtime_ingest_report(self, session_id: str | None = None, limit: int | None = 20) -> dict[str, object]:
         return self.feedback_store.build_runtime_ingest_report(session_id=session_id, limit=limit)

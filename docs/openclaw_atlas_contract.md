@@ -11,6 +11,7 @@ The goal is narrow and reviewable:
 ## Contract Summary
 
 Atlas accepts a single event envelope, a list of event envelopes, or a batch object with `events`.
+It also has an explicit `openclaw-import` path for local operator-session artifacts that are adapted into the same event envelope chain.
 
 Per-event envelope:
 
@@ -70,6 +71,42 @@ Batch form:
 }
 ```
 
+OpenClaw operator session artifact accepted by `openclaw-import`:
+
+```json
+{
+  "artifact_kind": "openclaw_operator_session",
+  "schema_version": "1.0",
+  "source": "openclaw-local",
+  "recorded_at": "2026-03-13T18:30:00+00:00",
+  "session": {
+    "session_id": "demo-openclaw-session-001",
+    "task": "review postgres migration rollback safety",
+    "started_at": "2026-03-13T18:20:00+00:00",
+    "operator": "local-demo",
+    "selected_skill_ids": ["code_review"]
+  },
+  "timeline": [
+    {
+      "checkpoint_id": "cp-risk",
+      "occurred_at": "2026-03-13T18:24:00+00:00",
+      "step": "inspect rollback risk",
+      "status": "blocked",
+      "missing_capabilities": ["database migrations"]
+    }
+  ],
+  "outcome": {
+    "occurred_at": "2026-03-13T18:28:00+00:00",
+    "status": "failure",
+    "score": 0.2
+  },
+  "handoff": {
+    "summary": "Paused after rollback risk inspection.",
+    "next_action": "Verify lock-time risk before promotion."
+  }
+}
+```
+
 ## Event Types
 
 Supported event bodies:
@@ -112,6 +149,14 @@ The evolution pipeline consumes:
 
 The pipeline does not consume raw envelopes directly.
 
+`openclaw-import` deterministically adapts that session artifact into:
+
+- one `session_started` envelope that carries the ordered checkpoint list as `steps`
+- one `session_feedback` envelope when the artifact includes a terminal `outcome`
+- envelope and event metadata that preserve the checkpoint timeline, last checkpoint, operator name, and handoff notes
+
+That keeps the operator workflow input conservative while still accepting a more realistic local runtime artifact.
+
 ## Local Audit Surface
 
 Atlas writes three persistent ledgers plus optional operator report artifacts in the configured state directory:
@@ -119,6 +164,8 @@ Atlas writes three persistent ledgers plus optional operator report artifacts in
 - `events.jsonl`: routed sessions and direct feedback
 - `runtime_event_envelopes.jsonl`: raw OpenClaw/Atlas event envelopes
 - `projected_feedback.jsonl`: projected evolution feedback records
+- `reports/openclaw_import_<session-id>.json`: raw imported operator artifact plus the adapted envelopes and projected feedback records
+- `reports/openclaw_operator_handoff_<session-id>.json`: session summary, last checkpoint, missing capabilities, and exact resume commands for the next local operator
 - `reports/runtime_session_report_<session-id>.json|md`: operator evidence bundle with raw outcome, selected skills, missing capabilities, projected evolution signals, and promotion-risk notes
 - `reports/latest_evolution_report.json`: latest local evolution proposals plus gate policy, readiness, risk, and rollback metadata
 - `reports/latest_governance_report.json|md`: operator-facing promotion-readiness and rollback inspection report
@@ -149,6 +196,7 @@ The report adapter does not call an LLM. It deterministically summarizes:
 - raw session outcome
 - selected skills
 - missing capabilities
+- operator handoff state, last checkpoint, and next action
 - projected evolution signals from the local heuristic pipeline
 - promotion-risk notes derived from the offline evaluation gate
 

@@ -59,6 +59,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Read JSON from a file. If omitted, JSON is read from stdin.",
     )
 
+    openclaw_import_parser = subparsers.add_parser(
+        "openclaw-import",
+        help="Import a local OpenClaw operator session artifact into Atlas runtime ledgers.",
+    )
+    openclaw_import_parser.add_argument("--config", default="demo/atlas.toml")
+    openclaw_import_parser.add_argument(
+        "--file",
+        help="Read JSON from a file. If omitted, JSON is read from stdin.",
+    )
+
     report_parser = subparsers.add_parser(
         "report",
         help="Build an operator evidence report from runtime session event payloads.",
@@ -202,6 +212,58 @@ def cmd_ingest(args: argparse.Namespace) -> int:
                 "projected_feedback_records": len(projected_records),
                 "events": [event.to_dict() for event in envelopes],
                 "projected_feedback": [record.to_dict() for record in projected_records],
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def cmd_openclaw_import(args: argparse.Namespace) -> int:
+    orchestrator = AtlasOrchestrator.from_config_path(args.config)
+    try:
+        payload = _read_ingest_payload(args.file)
+        handoff, envelopes, projected_records = orchestrator.import_openclaw_operator_session(payload)
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        raise SystemExit(f"Invalid OpenClaw operator artifact: {error}") from error
+    import_artifact = {
+        "report_kind": "openclaw_operator_import",
+        "source_artifact": payload,
+        "adapted_envelopes": [event.to_dict() for event in envelopes],
+        "projected_feedback": [record.to_dict() for record in projected_records],
+        "handoff": handoff,
+    }
+    session_id = handoff["session_id"]
+    import_artifact_path = orchestrator.feedback_store.write_report(
+        f"openclaw_import_{session_id}.json",
+        import_artifact,
+    )
+    latest_import_artifact_path = orchestrator.feedback_store.write_report(
+        "latest_openclaw_import.json",
+        import_artifact,
+    )
+    handoff_report_path = orchestrator.feedback_store.write_report(
+        f"openclaw_operator_handoff_{session_id}.json",
+        handoff,
+    )
+    latest_handoff_report_path = orchestrator.feedback_store.write_report(
+        "latest_openclaw_operator_handoff.json",
+        handoff,
+    )
+    print(
+        json.dumps(
+            {
+                "status": "recorded",
+                "ingested": len(envelopes),
+                "projected_feedback_records": len(projected_records),
+                "session_id": session_id,
+                "events": [event.to_dict() for event in envelopes],
+                "projected_feedback": [record.to_dict() for record in projected_records],
+                "handoff": handoff,
+                "import_artifact_path": str(import_artifact_path),
+                "latest_import_artifact_path": str(latest_import_artifact_path),
+                "handoff_report_path": str(handoff_report_path),
+                "latest_handoff_report_path": str(latest_handoff_report_path),
             },
             indent=2,
         )
@@ -444,6 +506,7 @@ def main(argv: list[str] | None = None) -> int:
         "route": cmd_route,
         "feedback": cmd_feedback,
         "ingest": cmd_ingest,
+        "openclaw-import": cmd_openclaw_import,
         "report": cmd_report,
         "inspect": cmd_inspect,
         "evolve": cmd_evolve,

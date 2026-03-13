@@ -10,6 +10,7 @@ import unittest
 from atlas_evolution.cli import main
 from atlas_evolution.config import load_config
 from atlas_evolution.runtime.orchestrator import AtlasOrchestrator
+from atlas_evolution.runtime.openclaw_adapter import adapt_openclaw_operator_session_artifact
 from atlas_evolution.runtime.proxy import make_handler
 from atlas_evolution.runtime_events import parse_runtime_session_events
 
@@ -57,6 +58,192 @@ def build_orchestrator(root: Path) -> tuple[AtlasOrchestrator, Path]:
 
 
 class RuntimeIngestTests(unittest.TestCase):
+    def test_cli_openclaw_import_adapts_operator_session_artifact_and_writes_handoff(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _, config_path = build_orchestrator(root)
+            payload_path = root / "openclaw_session.json"
+            payload_path.write_text(
+                json.dumps(
+                    {
+                        "artifact_kind": "openclaw_operator_session",
+                        "schema_version": "1.0",
+                        "source": "openclaw-local",
+                        "recorded_at": "2026-03-10T10:06:00+00:00",
+                        "session": {
+                            "session_id": "sess-openclaw",
+                            "task": "review postgres migration rollback safety",
+                            "started_at": "2026-03-10T10:00:00+00:00",
+                            "operator": "test-suite",
+                            "selected_skill_ids": ["code_review"],
+                        },
+                        "timeline": [
+                            {
+                                "checkpoint_id": "cp-collect",
+                                "occurred_at": "2026-03-10T10:01:00+00:00",
+                                "step": "collect migration files",
+                                "status": "completed",
+                            },
+                            {
+                                "checkpoint_id": "cp-risk",
+                                "occurred_at": "2026-03-10T10:04:00+00:00",
+                                "step": "inspect rollback risk",
+                                "status": "blocked",
+                                "notes": "lock-time estimate missing",
+                                "missing_capabilities": ["database migrations"],
+                            },
+                        ],
+                        "outcome": {
+                            "occurred_at": "2026-03-10T10:05:00+00:00",
+                            "status": "failure",
+                            "score": 0.2,
+                            "comment": "missed rollback coverage",
+                            "missing_capabilities": ["database migrations"],
+                        },
+                        "handoff": {
+                            "summary": "Paused after rollback risk inspection.",
+                            "next_action": "Verify lock-time risk before promotion.",
+                            "assignee": "db-oncall",
+                        },
+                        "metadata": {"trace_id": "openclaw-trace-1"},
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                result = main(["openclaw-import", "--config", str(config_path), "--file", str(payload_path)])
+
+            self.assertEqual(result, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["ingested"], 2)
+            self.assertEqual(payload["projected_feedback_records"], 1)
+            self.assertEqual(payload["handoff"]["session_state"], "completed")
+            self.assertEqual(payload["handoff"]["last_checkpoint"]["checkpoint_id"], "cp-risk")
+            self.assertIn("evolve", payload["handoff"]["resume_commands"])
+            self.assertTrue(Path(payload["import_artifact_path"]).exists())
+            self.assertTrue(Path(payload["handoff_report_path"]).exists())
+            self.assertTrue(Path(payload["latest_import_artifact_path"]).exists())
+            self.assertTrue(Path(payload["latest_handoff_report_path"]).exists())
+
+            orchestrator = AtlasOrchestrator(load_config(config_path))
+            raw_envelopes = orchestrator.feedback_store.iter_runtime_event_envelopes()
+            self.assertEqual(len(raw_envelopes), 2)
+            self.assertEqual(
+                raw_envelopes[0].metadata["openclaw_adapter"]["artifact_kind"],
+                "openclaw_operator_session",
+            )
+            feedback = orchestrator.feedback_store.load_feedback()
+            self.assertEqual(len(feedback), 1)
+            envelope_metadata = feedback[0].metadata["runtime_projection_metadata"]["envelope_metadata"]
+            self.assertEqual(envelope_metadata["openclaw_adapter"]["last_checkpoint_id"], "cp-risk")
+
+    def test_cli_openclaw_import_without_outcome_preserves_handoff_resume_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _, config_path = build_orchestrator(root)
+            payload_path = root / "openclaw_incomplete.json"
+            payload_path.write_text(
+                json.dumps(
+                    {
+                        "artifact_kind": "openclaw_operator_session",
+                        "schema_version": "1.0",
+                        "source": "openclaw-local",
+                        "recorded_at": "2026-03-10T11:03:00+00:00",
+                        "session": {
+                            "session_id": "sess-openclaw-incomplete",
+                            "task": "review postgres migration rollback safety",
+                            "started_at": "2026-03-10T11:00:00+00:00",
+                            "operator": "handoff-operator",
+                            "selected_skill_ids": ["code_review"],
+                        },
+                        "timeline": [
+                            {
+                                "checkpoint_id": "cp-pause",
+                                "occurred_at": "2026-03-10T11:02:00+00:00",
+                                "step": "inspect rollback plan",
+                                "status": "handoff",
+                                "notes": "waiting for DBA confirmation",
+                                "missing_capabilities": ["database migrations"],
+                            }
+                        ],
+                        "handoff": {
+                            "summary": "Session paused for DBA confirmation.",
+                            "next_action": "Resume after the lock-time estimate arrives.",
+                        },
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                result = main(["openclaw-import", "--config", str(config_path), "--file", str(payload_path)])
+
+            self.assertEqual(result, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["ingested"], 1)
+            self.assertEqual(payload["projected_feedback_records"], 0)
+            self.assertEqual(payload["handoff"]["session_state"], "awaiting_feedback")
+            self.assertIn("record_feedback", payload["handoff"]["resume_commands"])
+            self.assertTrue(Path(payload["latest_handoff_report_path"]).exists())
+
+    def test_runtime_session_report_surfaces_openclaw_handoff_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            orchestrator, _ = build_orchestrator(root)
+            artifact = {
+                "artifact_kind": "openclaw_operator_session",
+                "schema_version": "1.0",
+                "source": "openclaw-local",
+                "recorded_at": "2026-03-10T10:06:00+00:00",
+                "session": {
+                    "session_id": "sess-report-openclaw",
+                    "task": "review postgres migration rollback safety",
+                    "started_at": "2026-03-10T10:00:00+00:00",
+                    "operator": "test-suite",
+                    "selected_skill_ids": ["code_review"],
+                },
+                "timeline": [
+                    {
+                        "checkpoint_id": "cp-risk",
+                        "occurred_at": "2026-03-10T10:04:00+00:00",
+                        "step": "inspect rollback risk",
+                        "status": "blocked",
+                        "missing_capabilities": ["database migrations"],
+                    }
+                ],
+                "outcome": {
+                    "occurred_at": "2026-03-10T10:05:00+00:00",
+                    "status": "failure",
+                    "score": 0.2,
+                    "comment": "missed rollback coverage",
+                    "missing_capabilities": ["database migrations"],
+                },
+                "handoff": {
+                    "summary": "Paused after rollback risk inspection.",
+                    "next_action": "Verify lock-time risk before promotion.",
+                },
+            }
+            _, envelopes = adapt_openclaw_operator_session_artifact(artifact)
+
+            report = orchestrator.build_runtime_session_report(
+                payloads=[[item.to_dict() for item in envelopes]],
+                session_id="sess-report-openclaw",
+            )
+
+            self.assertEqual(report["operator_handoff"]["session_state"], "completed")
+            self.assertEqual(report["operator_handoff"]["last_checkpoint"]["status"], "blocked")
+            self.assertEqual(
+                report["operator_handoff"]["next_action"],
+                "Verify lock-time risk before promotion.",
+            )
+
     def test_cli_ingest_reads_batch_file_and_projects_feedback(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
