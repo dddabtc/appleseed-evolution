@@ -28,6 +28,12 @@ Atlas Evolution sits beside an agent runtime instead of replacing it.
 
 That makes v1.1 a **governed evolution pipeline**, not an autonomous learning system.
 
+## Key docs
+- [`docs/v1_1_milestone.md`](docs/v1_1_milestone.md) — what v1.1 ships and why it matters
+- [`docs/v1_2_productization_roadmap.md`](docs/v1_2_productization_roadmap.md) — next productization slice after v1.1
+- [`docs/openclaw_atlas_contract.md`](docs/openclaw_atlas_contract.md) — formal OpenClaw/Atlas contract
+- [`docs/operator_review_workflow.md`](docs/operator_review_workflow.md) — operator review/promotion workflow
+
 ## Architecture
 
 ```text
