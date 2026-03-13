@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 import sys
+
 from atlas_evolution.config import load_config, write_default_config
 from atlas_evolution.evolution.governance import (
     build_governance_payload,
@@ -15,6 +16,7 @@ from atlas_evolution.evolution.governance import (
 from atlas_evolution.models import EvolutionReport
 from atlas_evolution.runtime.orchestrator import AtlasOrchestrator
 from atlas_evolution.runtime.proxy import run_server
+from atlas_evolution.workflow_state import build_resume_payload, build_workflow_state, render_resume_markdown
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -104,9 +106,22 @@ def build_parser() -> argparse.ArgumentParser:
     promote_parser.add_argument("--config", default="demo/atlas.toml")
     promote_parser.add_argument("--report")
     promote_parser.add_argument("--proposal-id", action="append", default=[])
+    promote_parser.add_argument(
+        "--resume-last",
+        action="store_true",
+        help="Reuse the last persisted proposal selection and source report from workflow state.",
+    )
     promote_parser.add_argument("--dry-run", action="store_true")
     promote_parser.add_argument("--format", choices=["json", "markdown"], default="json")
     promote_parser.add_argument("--write-report", action="store_true")
+
+    resume_parser = subparsers.add_parser(
+        "resume",
+        help="Show the latest persisted workflow state, artifacts, and resume commands.",
+    )
+    resume_parser.add_argument("--config", default="demo/atlas.toml")
+    resume_parser.add_argument("--format", choices=["json", "markdown"], default="json")
+    resume_parser.add_argument("--write-report", action="store_true")
 
     serve_parser = subparsers.add_parser("serve", help="Run the local HTTP proxy surface.")
     serve_parser.add_argument("--config", default="demo/atlas.toml")
@@ -239,7 +254,16 @@ def cmd_inspect(args: argparse.Namespace) -> int:
 def cmd_evolve(args: argparse.Namespace) -> int:
     orchestrator = AtlasOrchestrator.from_config_path(args.config)
     report, path = orchestrator.pipeline.run()
-    print(json.dumps({"report_path": str(path), **report.to_dict()}, indent=2))
+    workflow_state = build_workflow_state(
+        store=orchestrator.feedback_store,
+        report=report,
+        source_report=path,
+        config_path=args.config,
+        stage="evolved",
+        requested_proposals=[],
+    )
+    workflow_state_path = orchestrator.feedback_store.write_workflow_state(workflow_state)
+    print(json.dumps({"report_path": str(path), "workflow_state_path": str(workflow_state_path), **report.to_dict()}, indent=2))
     return 0
 
 
@@ -281,6 +305,18 @@ def cmd_governance(args: argparse.Namespace) -> int:
 def cmd_review(args: argparse.Namespace) -> int:
     orchestrator = AtlasOrchestrator.from_config_path(args.config)
     report, report_path = _load_evolution_report(orchestrator, args.report)
+    persisted_json = build_operator_review_payload(report, orchestrator.skill_bank)
+    persisted_report_path = orchestrator.feedback_store.write_report("latest_operator_review.json", persisted_json)
+    workflow_state = build_workflow_state(
+        store=orchestrator.feedback_store,
+        report=report,
+        source_report=report_path,
+        config_path=args.config,
+        stage="reviewed",
+        review_report=persisted_report_path,
+        requested_proposals=[],
+    )
+    workflow_state_path = orchestrator.feedback_store.write_workflow_state(workflow_state)
     if args.format == "markdown":
         rendered = render_operator_review_markdown(report, orchestrator.skill_bank)
         if args.write_report:
@@ -293,24 +329,61 @@ def cmd_review(args: argparse.Namespace) -> int:
             return 0
         print(rendered, end="")
         return 0
-    payload = build_operator_review_payload(report, orchestrator.skill_bank)
+    payload = persisted_json
     payload["report_path"] = str(report_path)
-    if args.write_report:
-        output_path = orchestrator.feedback_store.write_report("latest_operator_review.json", payload)
-        payload["operator_review_report_path"] = str(output_path)
+    payload["operator_review_report_path"] = str(persisted_report_path)
+    payload["workflow_state_path"] = str(workflow_state_path)
     print(json.dumps(payload, indent=2))
     return 0
 
 
+def _resolve_promotion_request(
+    orchestrator: AtlasOrchestrator,
+    args: argparse.Namespace,
+) -> tuple[str | None, list[str]]:
+    if not args.resume_last:
+        return args.report, list(args.proposal_id)
+    if args.report or args.proposal_id:
+        raise SystemExit("--resume-last cannot be combined with --report or --proposal-id")
+    workflow_state = orchestrator.feedback_store.load_workflow_state()
+    if workflow_state is None:
+        raise SystemExit("No persisted workflow state is available for --resume-last")
+    report_path = workflow_state.get("source_report_path")
+    proposal_ids = list(workflow_state.get("selected_proposal_ids", []))
+    if not report_path:
+        raise SystemExit("Workflow state does not include a source report path")
+    if not proposal_ids:
+        raise SystemExit("Workflow state does not include a saved proposal selection")
+    return str(report_path), proposal_ids
+
+
 def cmd_promote(args: argparse.Namespace) -> int:
     orchestrator = AtlasOrchestrator.from_config_path(args.config)
-    report, report_path = _load_evolution_report(orchestrator, args.report)
+    report_arg, proposal_ids = _resolve_promotion_request(orchestrator, args)
+    report, report_path = _load_evolution_report(orchestrator, report_arg)
     payload = orchestrator.pipeline.build_promotion_artifact(
         report,
-        proposal_ids=list(args.proposal_id),
+        proposal_ids=proposal_ids,
         source_report=report_path,
         apply_changes=not args.dry_run,
     )
+    persisted_report_path = orchestrator.feedback_store.write_report("latest_promotion_artifact.json", payload)
+    workflow_state = build_workflow_state(
+        store=orchestrator.feedback_store,
+        report=report,
+        source_report=report_path,
+        config_path=args.config,
+        stage="promotion_dry_run" if args.dry_run else "promoted",
+        promotion_artifact=persisted_report_path,
+        requested_proposals=list(payload["requested_proposals"]),
+        selected_proposals=[item["proposal_id"] for item in payload["selected_proposals"]],
+        skipped_proposals=[item["proposal_id"] for item in payload["skipped_proposals"]],
+        applied_proposals=[
+            item["proposal_id"] for item in payload["selected_proposals"] if item.get("applied")
+        ],
+        dry_run=bool(payload["dry_run"]),
+    )
+    workflow_state_path = orchestrator.feedback_store.write_workflow_state(workflow_state)
     if args.format == "markdown":
         rendered = render_promotion_markdown(payload)
         if args.write_report:
@@ -323,9 +396,30 @@ def cmd_promote(args: argparse.Namespace) -> int:
             return 0
         print(rendered, end="")
         return 0
+    payload["promotion_artifact_path"] = str(persisted_report_path)
+    payload["workflow_state_path"] = str(workflow_state_path)
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
+def cmd_resume(args: argparse.Namespace) -> int:
+    orchestrator = AtlasOrchestrator.from_config_path(args.config)
+    try:
+        payload = build_resume_payload(orchestrator.feedback_store)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
+    if args.format == "markdown":
+        rendered = render_resume_markdown(payload)
+        if args.write_report:
+            output_path = orchestrator.feedback_store.write_text_report("latest_workflow_resume.md", rendered)
+            print(rendered, end="")
+            print(f"\nReport path: {output_path}")
+            return 0
+        print(rendered, end="")
+        return 0
     if args.write_report:
-        output_path = orchestrator.feedback_store.write_report("latest_promotion_artifact.json", payload)
-        payload["promotion_artifact_path"] = str(output_path)
+        output_path = orchestrator.feedback_store.write_report("latest_workflow_resume.json", payload)
+        payload["workflow_resume_report_path"] = str(output_path)
     print(json.dumps(payload, indent=2))
     return 0
 
@@ -356,6 +450,7 @@ def main(argv: list[str] | None = None) -> int:
         "governance": cmd_governance,
         "review": cmd_review,
         "promote": cmd_promote,
+        "resume": cmd_resume,
         "serve": cmd_serve,
     }
     return command_map[args.command](args)

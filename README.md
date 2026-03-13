@@ -39,6 +39,7 @@ atlas_evolution/
   runtime_events.py      # Compatibility wrapper for runtime-event parsing
   skill_bank.py          # Skill loading + keyword retrieval
   feedback_store.py      # Append-only JSONL ledgers + audit report builder
+  workflow_state.py      # Restart-safe workflow checkpoint helpers
   evolution/
     prompt_evolver.py    # Heuristic prompt/skill metadata proposals
     workflow_discoverer.py
@@ -78,6 +79,7 @@ Implemented in v1.1:
 - operator review queue with ready, risky, rollback-sensitive, and blocked proposal buckets
 - explicit promotion step for approved prompt updates
 - reviewable promotion artifacts with diff previews, rollback steps, dry-run support, and per-proposal targeting
+- restart-safe workflow state with persisted review/promotion artifact pointers and resume commands
 - operator-facing governance inspection command
 - local HTTP endpoints for route, feedback, and ingest
 
@@ -190,6 +192,12 @@ python3 -m atlas_evolution.cli review \
   --write-report
 ```
 
+Inspect the latest persisted workflow checkpoint after a restart:
+
+```bash
+python3 -m atlas_evolution.cli resume --config demo/atlas.toml
+```
+
 Dry-run a specific approved proposal before touching local assets:
 
 ```bash
@@ -209,7 +217,15 @@ python3 -m atlas_evolution.cli promote \
   --write-report
 ```
 
-The conservative operator chain is: `evolve -> governance/review -> promote`.
+Re-apply the last persisted dry-run selection after a restart:
+
+```bash
+python3 -m atlas_evolution.cli promote \
+  --config demo/atlas.toml \
+  --resume-last
+```
+
+The conservative operator chain is: `evolve -> governance/review -> promote`, with `resume` available to recover the latest local state after a restart.
 
 ## Local Proxy
 
@@ -297,8 +313,10 @@ The governed promotion path is intentionally split into separate local steps:
    - `rollback_sensitive` proposals that touch a local asset and include explicit revert steps
    - `operator_review_required` proposals with no automatic promotion path
    - `blocked` proposals that failed the gate
-4. `promote --dry-run` builds a deterministic promotion artifact before any file change.
-5. `promote` applies only approved `prompt_update` proposals and records what was applied, skipped, and how to roll back.
+4. `review` also persists `latest_operator_review.json` plus `latest_workflow_state.json`, so the queue and source report pointers survive a machine restart.
+5. `promote --dry-run` builds a deterministic promotion artifact before any file change and persists the requested proposal IDs for restart-safe reuse.
+6. `promote` applies only approved `prompt_update` proposals and records what was applied, skipped, and how to roll back in `latest_promotion_artifact.json`.
+7. `resume` reads `latest_workflow_state.json`, verifies artifact/log pointers, and prints the next local command surface.
 
 For a more detailed walkthrough, see [docs/operator_review_workflow.md](docs/operator_review_workflow.md).
 

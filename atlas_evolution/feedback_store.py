@@ -21,6 +21,8 @@ class FeedbackStore:
     runtime_events_path: Path = field(init=False)
     projected_feedback_path: Path = field(init=False)
     reports_dir: Path = field(init=False)
+    workflow_state_path: Path = field(init=False)
+    workflow_history_path: Path = field(init=False)
 
     def __post_init__(self) -> None:
         self.state_dir.mkdir(parents=True, exist_ok=True)
@@ -29,6 +31,8 @@ class FeedbackStore:
         self.projected_feedback_path = self.state_dir / "projected_feedback.jsonl"
         self.reports_dir = self.state_dir / "reports"
         self.reports_dir.mkdir(parents=True, exist_ok=True)
+        self.workflow_state_path = self.state_dir / "latest_workflow_state.json"
+        self.workflow_history_path = self.state_dir / "workflow_history.jsonl"
 
     def _append_jsonl(self, path: Path, payload: dict[str, Any]) -> None:
         with path.open("a", encoding="utf-8") as handle:
@@ -160,3 +164,13 @@ class FeedbackStore:
         path = self.reports_dir / name
         path.write_text(body, encoding="utf-8")
         return path
+
+    def load_workflow_state(self) -> dict[str, Any] | None:
+        if not self.workflow_state_path.exists():
+            return None
+        return json.loads(self.workflow_state_path.read_text(encoding="utf-8"))
+
+    def write_workflow_state(self, payload: dict[str, Any]) -> Path:
+        self.workflow_state_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        self._append_jsonl(self.workflow_history_path, payload)
+        return self.workflow_state_path

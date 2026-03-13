@@ -460,6 +460,52 @@ class RuntimeIngestTests(unittest.TestCase):
             self.assertIn("atlas-evolution promote --proposal-id prompt-code_review", prompt["promotion_command"])
             self.assertIn("---", prompt["change_preview"]["diff"])
             self.assertTrue(Path(payload["operator_review_report_path"]).exists())
+            self.assertTrue(Path(payload["workflow_state_path"]).exists())
+
+    def test_cli_resume_surfaces_persisted_review_state_after_restart(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            orchestrator, config_path = build_orchestrator(root)
+
+            route_one = orchestrator.route_task("review postgres migration rollback safety")
+            route_two = orchestrator.route_task("review postgres indexing migration")
+            selected = [item["skill"]["id"] for item in route_one["selected_skills"]]
+            for route, comment in (
+                (route_one, "Need deeper postgres migration coverage"),
+                (route_two, "postgres review missed migration rollback issues"),
+            ):
+                orchestrator.record_feedback(
+                    session_id=route["session_id"],
+                    task=route["task"],
+                    status="failure",
+                    score=0.2,
+                    comment=comment,
+                    selected_skill_ids=selected,
+                    missing_capabilities=["database migrations"],
+                )
+
+            review_stdout = io.StringIO()
+            with contextlib.redirect_stdout(review_stdout):
+                review_result = main(["review", "--config", str(config_path)])
+
+            self.assertEqual(review_result, 0)
+            review_payload = json.loads(review_stdout.getvalue())
+            self.assertTrue(Path(review_payload["operator_review_report_path"]).exists())
+
+            resume_stdout = io.StringIO()
+            with contextlib.redirect_stdout(resume_stdout):
+                resume_result = main(["resume", "--config", str(config_path)])
+
+            self.assertEqual(resume_result, 0)
+            resume_payload = json.loads(resume_stdout.getvalue())
+            self.assertEqual(resume_payload["stage"], "reviewed")
+            self.assertTrue(resume_payload["recoverable"])
+            self.assertEqual(
+                resume_payload["artifact_status"]["operator_review_report"]["path"],
+                review_payload["operator_review_report_path"],
+            )
+            self.assertTrue(resume_payload["artifact_status"]["operator_review_report"]["exists"])
+            self.assertIn("promote", resume_payload["next_action"].lower())
 
     def test_cli_promote_emits_reviewable_artifact_and_supports_dry_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -508,6 +554,7 @@ class RuntimeIngestTests(unittest.TestCase):
                 dry_run_payload["skipped_proposals"][0]["proposal_id"],
                 "capability-database-migrations",
             )
+            self.assertTrue(Path(dry_run_payload["workflow_state_path"]).exists())
             unchanged = json.loads((root / "skills" / "code_review.json").read_text(encoding="utf-8"))
             self.assertNotIn("postgres", unchanged["tags"])
 
@@ -534,6 +581,58 @@ class RuntimeIngestTests(unittest.TestCase):
             )
             self.assertTrue(apply_payload["selected_proposals"][0]["applied"])
             self.assertTrue(Path(apply_payload["promotion_artifact_path"]).exists())
+            self.assertTrue(Path(apply_payload["workflow_state_path"]).exists())
+            updated = json.loads((root / "skills" / "code_review.json").read_text(encoding="utf-8"))
+            self.assertIn("postgres", updated["tags"])
+
+    def test_cli_promote_resume_last_reuses_saved_dry_run_selection(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            orchestrator, config_path = build_orchestrator(root)
+
+            route_one = orchestrator.route_task("review postgres migration rollback safety")
+            route_two = orchestrator.route_task("review postgres indexing migration")
+            selected = [item["skill"]["id"] for item in route_one["selected_skills"]]
+            for route, comment in (
+                (route_one, "Need deeper postgres migration coverage"),
+                (route_two, "postgres review missed migration rollback issues"),
+            ):
+                orchestrator.record_feedback(
+                    session_id=route["session_id"],
+                    task=route["task"],
+                    status="failure",
+                    score=0.2,
+                    comment=comment,
+                    selected_skill_ids=selected,
+                    missing_capabilities=["database migrations"],
+                )
+
+            dry_run_stdout = io.StringIO()
+            with contextlib.redirect_stdout(dry_run_stdout):
+                dry_run_result = main(
+                    [
+                        "promote",
+                        "--config",
+                        str(config_path),
+                        "--proposal-id",
+                        "prompt-code_review",
+                        "--dry-run",
+                    ]
+                )
+
+            self.assertEqual(dry_run_result, 0)
+            dry_run_payload = json.loads(dry_run_stdout.getvalue())
+            self.assertEqual(dry_run_payload["requested_proposals"], ["prompt-code_review"])
+
+            apply_stdout = io.StringIO()
+            with contextlib.redirect_stdout(apply_stdout):
+                apply_result = main(["promote", "--config", str(config_path), "--resume-last"])
+
+            self.assertEqual(apply_result, 0)
+            apply_payload = json.loads(apply_stdout.getvalue())
+            self.assertFalse(apply_payload["dry_run"])
+            self.assertEqual(apply_payload["requested_proposals"], ["prompt-code_review"])
+            self.assertEqual(apply_payload["summary"]["applied_proposals"], 1)
             updated = json.loads((root / "skills" / "code_review.json").read_text(encoding="utf-8"))
             self.assertIn("postgres", updated["tags"])
 

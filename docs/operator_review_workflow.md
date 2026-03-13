@@ -1,6 +1,7 @@
 # Operator Review and Promote Workflow
 
 Atlas Evolution keeps proposal review and promotion local, deterministic, and operator-visible.
+The latest workflow checkpoint is also persisted locally so review/promote work can be resumed after a machine restart.
 
 ## Command Chain
 
@@ -28,6 +29,12 @@ python3 -m atlas_evolution.cli review \
   --write-report
 ```
 
+Inspect the restart-safe workflow checkpoint:
+
+```bash
+python3 -m atlas_evolution.cli resume --config demo/atlas.toml
+```
+
 Dry-run a targeted promotion artifact:
 
 ```bash
@@ -45,6 +52,14 @@ python3 -m atlas_evolution.cli promote \
   --config demo/atlas.toml \
   --proposal-id prompt-code_review \
   --write-report
+```
+
+Re-apply the most recent dry-run selection after a restart:
+
+```bash
+python3 -m atlas_evolution.cli promote \
+  --config demo/atlas.toml \
+  --resume-last
 ```
 
 ## Review Buckets
@@ -68,3 +83,13 @@ python3 -m atlas_evolution.cli promote \
 - the files actually changed during a non-dry-run promotion
 
 This keeps the promotion surface reviewable even when no files are changed.
+
+## Restart Recovery
+
+Atlas now keeps three restart-oriented files in the local state directory:
+
+- `latest_workflow_state.json`: current workflow stage, source evolution report, resume commands, and ledger pointers
+- `workflow_history.jsonl`: append-only checkpoint history for each evolve/review/promote transition
+- `reports/latest_operator_review.json` and `reports/latest_promotion_artifact.json`: persisted JSON artifacts for the last review and promotion step
+
+That means a machine restart does not require rebuilding the operator queue from memory or terminal scrollback.

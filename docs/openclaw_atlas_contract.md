@@ -122,6 +122,9 @@ Atlas writes three persistent ledgers plus optional operator report artifacts in
 - `reports/runtime_session_report_<session-id>.json|md`: operator evidence bundle with raw outcome, selected skills, missing capabilities, projected evolution signals, and promotion-risk notes
 - `reports/latest_evolution_report.json`: latest local evolution proposals plus gate policy, readiness, risk, and rollback metadata
 - `reports/latest_governance_report.json|md`: operator-facing promotion-readiness and rollback inspection report
+- `reports/latest_operator_review.json`: latest persisted operator review queue for restart-safe recovery
+- `reports/latest_promotion_artifact.json`: latest persisted promotion or dry-run artifact
+- `latest_workflow_state.json` and `workflow_history.jsonl`: workflow checkpoint plus append-only resume history
 
 Operators can inspect the chain with:
 
