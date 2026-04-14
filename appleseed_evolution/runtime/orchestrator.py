@@ -3,23 +3,23 @@ from __future__ import annotations
 from pathlib import Path
 import uuid
 
-from atlas_evolution.config import AtlasConfig, load_config
-from atlas_evolution.feedback_store import FeedbackStore
-from atlas_evolution.models import FeedbackRecord, ProjectedFeedbackRecord
-from atlas_evolution.openclaw_contract import OpenClawAtlasEventEnvelope, parse_openclaw_atlas_event_envelopes
-from atlas_evolution.runtime.openclaw_adapter import (
+from appleseed_evolution.config import AppleseedConfig, load_config
+from appleseed_evolution.feedback_store import FeedbackStore
+from appleseed_evolution.models import FeedbackRecord, ProjectedFeedbackRecord
+from appleseed_evolution.openclaw_contract import OpenClawAppleseedEventEnvelope, parse_openclaw_appleseed_event_envelopes
+from appleseed_evolution.runtime.openclaw_adapter import (
     adapt_openclaw_operator_session_artifact,
     build_openclaw_operator_handoff_payload,
     parse_openclaw_operator_handoff_bundle,
 )
-from atlas_evolution.runtime.report_adapter import RuntimeSessionReportAdapter
-from atlas_evolution.skill_bank import SkillBank
+from appleseed_evolution.runtime.report_adapter import RuntimeSessionReportAdapter
+from appleseed_evolution.skill_bank import SkillBank
 
-from atlas_evolution.evolution.pipeline import EvolutionPipeline
+from appleseed_evolution.evolution.pipeline import EvolutionPipeline
 
 
-class AtlasOrchestrator:
-    def __init__(self, config: AtlasConfig) -> None:
+class AppleseedOrchestrator:
+    def __init__(self, config: AppleseedConfig) -> None:
         self.config = config
         self.skill_bank = SkillBank.from_directory(config.paths.skills_dir)
         self.feedback_store = FeedbackStore(config.paths.state_dir)
@@ -36,7 +36,7 @@ class AtlasOrchestrator:
         )
 
     @classmethod
-    def from_config_path(cls, path: str | Path) -> "AtlasOrchestrator":
+    def from_config_path(cls, path: str | Path) -> "AppleseedOrchestrator":
         return cls(load_config(path))
 
     def route_task(self, task: str, metadata: dict[str, object] | None = None) -> dict[str, object]:
@@ -86,8 +86,8 @@ class AtlasOrchestrator:
         self.feedback_store.log_feedback(record)
         return record
 
-    def ingest_runtime_events(self, payload: object) -> tuple[list[OpenClawAtlasEventEnvelope], list[ProjectedFeedbackRecord]]:
-        envelopes = parse_openclaw_atlas_event_envelopes(payload)
+    def ingest_runtime_events(self, payload: object) -> tuple[list[OpenClawAppleseedEventEnvelope], list[ProjectedFeedbackRecord]]:
+        envelopes = parse_openclaw_appleseed_event_envelopes(payload)
         projected_records: list[ProjectedFeedbackRecord] = []
         for envelope in envelopes:
             projected = self.feedback_store.record_runtime_ingest(envelope)
@@ -98,7 +98,7 @@ class AtlasOrchestrator:
     def import_openclaw_operator_session(
         self,
         payload: object,
-    ) -> tuple[dict[str, object], list[OpenClawAtlasEventEnvelope], list[ProjectedFeedbackRecord]]:
+    ) -> tuple[dict[str, object], list[OpenClawAppleseedEventEnvelope], list[ProjectedFeedbackRecord]]:
         artifact, envelopes = adapt_openclaw_operator_session_artifact(payload)
         projected_records: list[ProjectedFeedbackRecord] = []
         for envelope in envelopes:
@@ -116,7 +116,7 @@ class AtlasOrchestrator:
 
     def build_runtime_session_report_from_envelopes(
         self,
-        envelopes: list[OpenClawAtlasEventEnvelope],
+        envelopes: list[OpenClawAppleseedEventEnvelope],
         session_id: str | None = None,
     ) -> dict[str, object]:
         return self.report_adapter.build_report(envelopes, session_id=session_id).to_dict()
@@ -127,7 +127,7 @@ class AtlasOrchestrator:
     ) -> tuple[
         dict[str, object],
         dict[str, object] | None,
-        list[OpenClawAtlasEventEnvelope],
+        list[OpenClawAppleseedEventEnvelope],
         list[ProjectedFeedbackRecord],
         dict[str, int],
         dict[str, int],
@@ -166,9 +166,9 @@ class AtlasOrchestrator:
         payloads: list[object],
         session_id: str | None = None,
     ) -> dict[str, object]:
-        envelopes: list[OpenClawAtlasEventEnvelope] = []
+        envelopes: list[OpenClawAppleseedEventEnvelope] = []
         for payload in payloads:
-            envelopes.extend(parse_openclaw_atlas_event_envelopes(payload))
+            envelopes.extend(parse_openclaw_appleseed_event_envelopes(payload))
         return self.report_adapter.build_report(envelopes, session_id=session_id).to_dict()
 
     def render_runtime_session_report_markdown(
@@ -176,8 +176,8 @@ class AtlasOrchestrator:
         payloads: list[object],
         session_id: str | None = None,
     ) -> str:
-        envelopes: list[OpenClawAtlasEventEnvelope] = []
+        envelopes: list[OpenClawAppleseedEventEnvelope] = []
         for payload in payloads:
-            envelopes.extend(parse_openclaw_atlas_event_envelopes(payload))
+            envelopes.extend(parse_openclaw_appleseed_event_envelopes(payload))
         report = self.report_adapter.build_report(envelopes, session_id=session_id)
         return self.report_adapter.render_markdown(report)

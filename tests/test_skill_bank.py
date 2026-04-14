@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from atlas_evolution.skill_bank import SkillBank
+from appleseed_evolution.skill_bank import SkillBank
 
 
 class SkillBankTests(unittest.TestCase):

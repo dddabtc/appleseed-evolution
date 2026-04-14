@@ -6,8 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from atlas_evolution.models import FeedbackRecord, ProjectedFeedbackRecord
-from atlas_evolution.openclaw_contract import OpenClawAtlasEventEnvelope, parse_openclaw_atlas_event_envelopes
+from appleseed_evolution.models import FeedbackRecord, ProjectedFeedbackRecord
+from appleseed_evolution.openclaw_contract import OpenClawAppleseedEventEnvelope, parse_openclaw_appleseed_event_envelopes
 
 
 def utc_now() -> str:
@@ -77,13 +77,13 @@ class FeedbackStore:
     def log_feedback(self, record: FeedbackRecord) -> None:
         self.append_event("feedback_recorded", record.to_dict())
 
-    def log_runtime_event_envelope(self, envelope: OpenClawAtlasEventEnvelope) -> None:
+    def log_runtime_event_envelope(self, envelope: OpenClawAppleseedEventEnvelope) -> None:
         self._append_jsonl(self.runtime_events_path, envelope.to_dict())
 
     def log_projected_feedback(self, record: ProjectedFeedbackRecord) -> None:
         self._append_jsonl(self.projected_feedback_path, record.to_dict())
 
-    def import_runtime_event_envelopes(self, envelopes: list[OpenClawAtlasEventEnvelope]) -> dict[str, int]:
+    def import_runtime_event_envelopes(self, envelopes: list[OpenClawAppleseedEventEnvelope]) -> dict[str, int]:
         existing_ids = {item.envelope_id for item in self.iter_runtime_event_envelopes()}
         recorded = 0
         skipped = 0
@@ -109,7 +109,7 @@ class FeedbackStore:
             recorded += 1
         return {"recorded": recorded, "skipped": skipped}
 
-    def record_runtime_ingest(self, envelope: OpenClawAtlasEventEnvelope) -> ProjectedFeedbackRecord | None:
+    def record_runtime_ingest(self, envelope: OpenClawAppleseedEventEnvelope) -> ProjectedFeedbackRecord | None:
         self.log_runtime_event_envelope(envelope)
         projected = envelope.to_projected_feedback_record()
         if projected is not None:
@@ -119,11 +119,11 @@ class FeedbackStore:
     def iter_events(self) -> list[dict[str, Any]]:
         return self._read_jsonl(self.events_path)
 
-    def iter_runtime_event_envelopes(self) -> list[OpenClawAtlasEventEnvelope]:
+    def iter_runtime_event_envelopes(self) -> list[OpenClawAppleseedEventEnvelope]:
         payload = self._read_jsonl(self.runtime_events_path)
         if not payload:
             return []
-        return parse_openclaw_atlas_event_envelopes(payload)
+        return parse_openclaw_appleseed_event_envelopes(payload)
 
     def iter_projected_feedback_records(self) -> list[ProjectedFeedbackRecord]:
         return [ProjectedFeedbackRecord.from_dict(item) for item in self._read_jsonl(self.projected_feedback_path)]
@@ -137,7 +137,7 @@ class FeedbackStore:
                 records.append(FeedbackRecord.from_dict(payload))
                 continue
             if event_type == "runtime_session_event":
-                legacy_envelopes = parse_openclaw_atlas_event_envelopes(payload)
+                legacy_envelopes = parse_openclaw_appleseed_event_envelopes(payload)
                 legacy_feedback = legacy_envelopes[0].to_projected_feedback_record()
                 if legacy_feedback is not None:
                     records.append(legacy_feedback.to_feedback_record())

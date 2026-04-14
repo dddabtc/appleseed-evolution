@@ -1,7 +1,7 @@
 {
-  "name": "@atlas-evolution/openclaw-plugin",
+  "name": "@appleseed-evolution/openclaw-plugin",
   "version": "0.1.0",
-  "description": "Official OpenClaw export, spool, and transport plugin for Atlas Evolution",
+  "description": "Official OpenClaw export, spool, and transport plugin for Appleseed Evolution",
   "private": true,
   "type": "module",
   "main": "./index.js",
@@ -27,7 +27,7 @@
     "node": ">=18"
   },
   "keywords": [
-    "atlas-evolution",
+    "appleseed-evolution",
     "openclaw",
     "plugin",
     "runtime-events",

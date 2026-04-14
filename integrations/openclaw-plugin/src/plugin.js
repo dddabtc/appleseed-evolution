@@ -46,7 +46,7 @@ function authorizeRequest(req, config) {
   if (!config.apiKey) {
     return true;
   }
-  const apiKey = readHeader(req.headers, "x-atlas-api-key");
+  const apiKey = readHeader(req.headers, "x-appleseed-api-key");
   const authorization = readHeader(req.headers, "authorization");
   if (apiKey === config.apiKey) {
     return true;
@@ -76,20 +76,20 @@ async function readJsonBody(req) {
 
 function formatStatusText(status) {
   return [
-    `atlas-evolution plugin: ${status.enabled ? "enabled" : "disabled"}`,
+    `appleseed-evolution plugin: ${status.enabled ? "enabled" : "disabled"}`,
     `spool dir: ${status.spool_dir}`,
     `runtime events: ${status.counts.runtime_events}`,
     `operator sessions: ${status.counts.operator_sessions}`,
     `support capture: ${status.counts.support_capture}`,
     `delivery attempts: ${status.counts.delivery_attempts}`,
     `base url: ${status.base_url || "disabled"}`,
-    "operator-session artifacts are spooled and replayed with atlas-evolution openclaw-import.",
+    "operator-session artifacts are spooled and replayed with appleseed-evolution openclaw-import.",
   ].join("\n");
 }
 
 function assertPluginEnabled(config) {
   if (!config.enabled) {
-    throw new Error("atlas-evolution plugin is disabled; re-enable it to export payloads");
+    throw new Error("appleseed-evolution plugin is disabled; re-enable it to export payloads");
   }
 }
 
@@ -102,22 +102,22 @@ async function dispatchRequest(transport, config, request, options = {}) {
 function registerCliSurface(api, transport, config) {
   api.registerCli(
     ({ program }) => {
-      const atlas = program.command("atlas-export").description("Export Atlas Evolution payloads from OpenClaw");
+      const appleseed = program.command("appleseed-export").description("Export Appleseed Evolution payloads from OpenClaw");
 
-      atlas.command("status").action(() => {
+      appleseed.command("status").action(() => {
         console.log(JSON.stringify(transport.getStatus(), null, 2));
       });
 
-      atlas
+      appleseed
         .command("send-file <file>")
-        .option("--no-post", "spool only; skip Atlas HTTP POST")
+        .option("--no-post", "spool only; skip Appleseed HTTP POST")
         .action(async (file, options) => {
           const request = await readJsonFile(file);
           const result = await dispatchRequest(transport, config, request, { post: options.post });
           console.log(JSON.stringify(result, null, 2));
         });
 
-      atlas
+      appleseed
         .command("started")
         .requiredOption("--session-id <id>")
         .requiredOption("--task <task>")
@@ -128,7 +128,7 @@ function registerCliSurface(api, transport, config) {
         .option("--missing-capability <value>", "repeatable missing capability", appendList, [])
         .option("--metadata <key=value>", "repeatable event metadata", appendList, [])
         .option("--envelope-metadata <key=value>", "repeatable envelope metadata", appendList, [])
-        .option("--no-post", "spool only; skip Atlas HTTP POST")
+        .option("--no-post", "spool only; skip Appleseed HTTP POST")
         .action(async (options) => {
           const result = await dispatchRequest(
             transport,
@@ -150,7 +150,7 @@ function registerCliSurface(api, transport, config) {
           console.log(JSON.stringify(result, null, 2));
         });
 
-      atlas
+      appleseed
         .command("feedback")
         .requiredOption("--session-id <id>")
         .requiredOption("--task <task>")
@@ -164,7 +164,7 @@ function registerCliSurface(api, transport, config) {
         .option("--missing-capability <value>", "repeatable missing capability", appendList, [])
         .option("--metadata <key=value>", "repeatable event metadata", appendList, [])
         .option("--envelope-metadata <key=value>", "repeatable envelope metadata", appendList, [])
-        .option("--no-post", "spool only; skip Atlas HTTP POST")
+        .option("--no-post", "spool only; skip Appleseed HTTP POST")
         .action(async (options) => {
           const result = await dispatchRequest(
             transport,
@@ -189,7 +189,7 @@ function registerCliSurface(api, transport, config) {
           console.log(JSON.stringify(result, null, 2));
         });
 
-      atlas
+      appleseed
         .command("operator-session")
         .requiredOption("--session-id <id>")
         .requiredOption("--task <task>")
@@ -198,8 +198,8 @@ function registerCliSurface(api, transport, config) {
         .option("--source <source>")
         .option("--operator <operator>")
         .option("--timeline-file <path>", "JSON array of timeline checkpoints")
-        .option("--outcome-file <path>", "JSON object matching Atlas openclaw-import outcome")
-        .option("--handoff-file <path>", "JSON object matching Atlas openclaw-import handoff")
+        .option("--outcome-file <path>", "JSON object matching Appleseed openclaw-import outcome")
+        .option("--handoff-file <path>", "JSON object matching Appleseed openclaw-import handoff")
         .option("--skill <value>", "repeatable selected skill id", appendList, [])
         .option("--missing-capability <value>", "repeatable missing capability", appendList, [])
         .option("--metadata <key=value>", "repeatable top-level artifact metadata", appendList, [])
@@ -230,13 +230,13 @@ function registerCliSurface(api, transport, config) {
           console.log(JSON.stringify(result, null, 2));
         });
     },
-    { commands: ["atlas-export"] },
+    { commands: ["appleseed-export"] },
   );
 }
 
 function registerRouteSurface(api, transport, config) {
   api.registerHttpRoute({
-    path: "/atlas-evolution/export",
+    path: "/appleseed-evolution/export",
     auth: "plugin",
     match: "exact",
     handler: async (req, res) => {
@@ -261,7 +261,7 @@ function registerRouteSurface(api, transport, config) {
   });
 
   api.registerHttpRoute({
-    path: "/atlas-evolution/status",
+    path: "/appleseed-evolution/status",
     auth: "plugin",
     match: "exact",
     handler: async (req, res) => {
@@ -280,11 +280,11 @@ function registerRouteSurface(api, transport, config) {
 }
 
 function registerGatewaySurface(api, transport, config) {
-  api.registerGatewayMethod("atlasEvolution.status", ({ respond }) => {
+  api.registerGatewayMethod("appleseedEvolution.status", ({ respond }) => {
     respond(true, transport.getStatus());
   });
 
-  api.registerGatewayMethod("atlasEvolution.export", async ({ params, respond }) => {
+  api.registerGatewayMethod("appleseedEvolution.export", async ({ params, respond }) => {
     try {
       const result = await dispatchRequest(transport, config, params ?? {}, { post: params?.post !== false });
       respond(true, result);
@@ -296,8 +296,8 @@ function registerGatewaySurface(api, transport, config) {
 
 function registerCommandSurface(api, transport) {
   api.registerCommand({
-    name: "atlas-export-status",
-    description: "Show Atlas Evolution spool and delivery status",
+    name: "appleseed-export-status",
+    description: "Show Appleseed Evolution spool and delivery status",
     requireAuth: true,
     handler: () => ({
       text: formatStatusText(transport.getStatus()),
@@ -305,7 +305,7 @@ function registerCommandSurface(api, transport) {
   });
 }
 
-export default function registerAtlasEvolutionPlugin(api) {
+export default function registerAppleseedEvolutionPlugin(api) {
   const config = normalizePluginConfig(api);
   const transport = createTransport(api, config);
 

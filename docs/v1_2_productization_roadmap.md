@@ -1,4 +1,4 @@
-# Atlas Evolution v1.2 Productization Roadmap
+# Appleseed Evolution v1.2 Productization Roadmap
 
 ## Objective
 Turn the current governed evolution control plane into a more complete product surface that operators can actually run, review, hand off, and maintain.
@@ -57,7 +57,7 @@ Until the governance and evaluation story is stronger, keep these out:
 - automatic deployment into production runtimes
 
 ## Desired end state for v1.2
-At the end of v1.2, Atlas Evolution should feel like:
+At the end of v1.2, Appleseed Evolution should feel like:
 - a real operator tool
 - easy to inspect
 - easy to resume after interruption

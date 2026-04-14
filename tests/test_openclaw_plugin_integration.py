@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 import unittest
 
-from atlas_evolution.openclaw_contract import parse_openclaw_atlas_event_envelopes
-from atlas_evolution.runtime.openclaw_adapter import parse_openclaw_operator_session_artifact
+from appleseed_evolution.openclaw_contract import parse_openclaw_appleseed_event_envelopes
+from appleseed_evolution.runtime.openclaw_adapter import parse_openclaw_operator_session_artifact
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,10 +18,10 @@ class OpenClawPluginIntegrationTests(unittest.TestCase):
         properties = manifest["configSchema"]["properties"]
         package = json.loads((PLUGIN_DIR / "package.json").read_text(encoding="utf-8"))
 
-        self.assertEqual(manifest["id"], "atlas-evolution")
+        self.assertEqual(manifest["id"], "appleseed-evolution")
         self.assertEqual(properties["enabled"]["default"], True)
         self.assertEqual(properties["baseUrl"]["default"], "http://127.0.0.1:8765")
-        self.assertEqual(properties["spoolDir"]["default"], ".openclaw/atlas-evolution-spool")
+        self.assertEqual(properties["spoolDir"]["default"], ".openclaw/appleseed-evolution-spool")
         self.assertEqual(properties["includeTranscript"]["default"], False)
         self.assertEqual(properties["includeToolCalls"]["default"], "summary")
         self.assertNotIn("required", manifest["configSchema"])
@@ -32,9 +32,9 @@ class OpenClawPluginIntegrationTests(unittest.TestCase):
         self.assertIn("pack:dry-run", package["scripts"])
         self.assertIn("openclaw.plugin.json", package["files"])
 
-    def test_runtime_event_fixture_matches_atlas_contract(self) -> None:
+    def test_runtime_event_fixture_matches_appleseed_contract(self) -> None:
         payload = json.loads((PLUGIN_DIR / "fixtures" / "runtime_event_batch.json").read_text(encoding="utf-8"))
-        envelopes = parse_openclaw_atlas_event_envelopes(payload)
+        envelopes = parse_openclaw_appleseed_event_envelopes(payload)
 
         self.assertEqual(len(envelopes), 2)
         self.assertEqual(envelopes[0].event.event_kind, "session_started")

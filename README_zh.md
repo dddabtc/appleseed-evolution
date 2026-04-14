@@ -1,8 +1,8 @@
-# Atlas Evolution
+# Appleseed Evolution
 
 [🇬🇧 English](README.md)
 
-**Atlas Evolution 是一个面向 OpenClaw、Atlas Memory 及同类 Agent 运行时的「受治理进化层」。**
+**Appleseed Evolution 是一个面向 OpenClaw、Appleseed Memory 及同类 Agent 运行时的「受治理进化层」。**
 
 它的目标不是宣称“Agent 已经会自动自我进化”，而是给操作者一套本地、可审计、可恢复、可接手的演化控制面：
 - 接 runtime 证据
@@ -23,7 +23,7 @@
 - 自动注入 skill
 - 讲一个“系统会自动越来越强”的故事
 
-Atlas Evolution 更关注真正难、但更接近生产的部分：
+Appleseed Evolution 更关注真正难、但更接近生产的部分：
 - **runtime feedback ingestion**
 - **raw / projected evidence 分层**
 - **可审查的提案生成**
@@ -31,11 +31,11 @@ Atlas Evolution 更关注真正难、但更接近生产的部分：
 - **可恢复的 workflow state**
 - **可重放的 handoff bundle**
 
-所以它更适合做 **OpenClaw / Atlas / 长时间运行 Agent 系统** 的 operator workflow，而不是做一个看起来很会“自我进化”的演示壳。
+所以它更适合做 **OpenClaw / Appleseed / 长时间运行 Agent 系统** 的 operator workflow，而不是做一个看起来很会“自我进化”的演示壳。
 
-## Atlas Evolution 到底做什么
+## Appleseed Evolution 到底做什么
 
-Atlas Evolution 是**贴在 runtime 旁边**工作的，不是替代 runtime。
+Appleseed Evolution 是**贴在 runtime 旁边**工作的，不是替代 runtime。
 
 1. 任务或 runtime artifact 通过 CLI、本地 proxy、或 `openclaw-import` 进入系统。
 2. 系统把 raw evidence 落到 append-only ledger。
@@ -47,7 +47,7 @@ Atlas Evolution 是**贴在 runtime 旁边**工作的，不是替代 runtime。
 
 所以正确定位是：
 
-> **Atlas Evolution = 面向 Agent 系统的 governed local evolution pipeline**
+> **Appleseed Evolution = 面向 Agent 系统的 governed local evolution pipeline**
 
 而不是：
 - 端到端自动学习平台
@@ -59,7 +59,7 @@ Atlas Evolution 是**贴在 runtime 旁边**工作的，不是替代 runtime。
 如果你想要的是：
 - 本地 **agent evolution framework**
 - 更安全的 **OpenClaw skill / prompt evolution** 工作流
-- 对 **Atlas Memory** 友好的证据和审计层
+- 对 **Appleseed Memory** 友好的证据和审计层
 - 更强的 **operator workflow**（review / promote / rollback / resume）
 
 那它适合你。
@@ -81,8 +81,8 @@ Atlas Evolution 是**贴在 runtime 旁边**工作的，不是替代 runtime。
 - projected feedback ledger
 - raw → projected 的 inspect 命令
 
-### OpenClaw / Atlas 接线面
-- formal OpenClaw/Atlas contract
+### OpenClaw / Appleseed 接线面
+- formal OpenClaw/Appleseed contract
 - `openclaw-import`：导入更真实的 OpenClaw operator session artifact
 - report 输出可展示 OpenClaw handoff context
 - replayable operator handoff bundles
@@ -105,74 +105,74 @@ Atlas Evolution 是**贴在 runtime 旁边**工作的，不是替代 runtime。
 ### 1. 查看 demo skills
 
 ```bash
-python3 -m atlas_evolution.cli skills --config demo/atlas.toml list
+python3 -m appleseed_evolution.cli skills --config demo/appleseed.toml list
 ```
 
 ### 2. 路由一个任务
 
 ```bash
-python3 -m atlas_evolution.cli route \
-  --config demo/atlas.toml \
+python3 -m appleseed_evolution.cli route \
+  --config demo/appleseed.toml \
   --task "review this patch for regressions"
 ```
 
 ### 3. 导入一个更真实的 OpenClaw operator session
 
 ```bash
-python3 -m atlas_evolution.cli openclaw-import \
-  --config demo/atlas.toml \
+python3 -m appleseed_evolution.cli openclaw-import \
+  --config demo/appleseed.toml \
   --file demo/openclaw_sessions/sample_operator_session.json
 ```
 
 ### 4. 查看审计 / review / resume
 
 ```bash
-python3 -m atlas_evolution.cli inspect --config demo/atlas.toml --write-report
-python3 -m atlas_evolution.cli review --config demo/atlas.toml --format markdown --write-report
-python3 -m atlas_evolution.cli resume --config demo/atlas.toml
+python3 -m appleseed_evolution.cli inspect --config demo/appleseed.toml --write-report
+python3 -m appleseed_evolution.cli review --config demo/appleseed.toml --format markdown --write-report
+python3 -m appleseed_evolution.cli resume --config demo/appleseed.toml
 ```
 
 ### 5. 生成并审查保守提案
 
 ```bash
-python3 -m atlas_evolution.cli evolve --config demo/atlas.toml
-python3 -m atlas_evolution.cli governance --config demo/atlas.toml --format markdown --write-report
-python3 -m atlas_evolution.cli promote --config demo/atlas.toml --proposal-id prompt-code_review --dry-run --write-report
+python3 -m appleseed_evolution.cli evolve --config demo/appleseed.toml
+python3 -m appleseed_evolution.cli governance --config demo/appleseed.toml --format markdown --write-report
+python3 -m appleseed_evolution.cli promote --config demo/appleseed.toml --proposal-id prompt-code_review --dry-run --write-report
 ```
 
 ## 最重要的命令
 
 ### Runtime evidence
 ```bash
-python3 -m atlas_evolution.cli ingest --config demo/atlas.toml --file demo/runtime_events/sample_batch.json
-python3 -m atlas_evolution.cli openclaw-import --config demo/atlas.toml --file demo/openclaw_sessions/sample_operator_session.json
-python3 -m atlas_evolution.cli report --config demo/atlas.toml --file demo/runtime_events/sample_batch.json --format markdown --write-report
-python3 -m atlas_evolution.cli inspect --config demo/atlas.toml --write-report
+python3 -m appleseed_evolution.cli ingest --config demo/appleseed.toml --file demo/runtime_events/sample_batch.json
+python3 -m appleseed_evolution.cli openclaw-import --config demo/appleseed.toml --file demo/openclaw_sessions/sample_operator_session.json
+python3 -m appleseed_evolution.cli report --config demo/appleseed.toml --file demo/runtime_events/sample_batch.json --format markdown --write-report
+python3 -m appleseed_evolution.cli inspect --config demo/appleseed.toml --write-report
 ```
 
 ### Governance 与 promotion
 ```bash
-python3 -m atlas_evolution.cli evolve --config demo/atlas.toml
-python3 -m atlas_evolution.cli governance --config demo/atlas.toml --format markdown --write-report
-python3 -m atlas_evolution.cli review --config demo/atlas.toml --format markdown --write-report
-python3 -m atlas_evolution.cli promote --config demo/atlas.toml --proposal-id prompt-code_review --dry-run --write-report
-python3 -m atlas_evolution.cli resume --config demo/atlas.toml
+python3 -m appleseed_evolution.cli evolve --config demo/appleseed.toml
+python3 -m appleseed_evolution.cli governance --config demo/appleseed.toml --format markdown --write-report
+python3 -m appleseed_evolution.cli review --config demo/appleseed.toml --format markdown --write-report
+python3 -m appleseed_evolution.cli promote --config demo/appleseed.toml --proposal-id prompt-code_review --dry-run --write-report
+python3 -m appleseed_evolution.cli resume --config demo/appleseed.toml
 ```
 
 ### 本地 HTTP surface
 ```bash
-python3 -m atlas_evolution.cli serve --config demo/atlas.toml
+python3 -m appleseed_evolution.cli serve --config demo/appleseed.toml
 curl http://127.0.0.1:8765/health
 ```
 
 ## 架构
 
 ```text
-atlas_evolution/
+appleseed_evolution/
   cli.py                 # 本地 CLI 入口
   config.py              # TOML 配置加载
   models.py              # 共用 dataclass
-  openclaw_contract.py   # OpenClaw/Atlas 正式 contract + typed model
+  openclaw_contract.py   # OpenClaw/Appleseed 正式 contract + typed model
   runtime_events.py      # runtime-event 兼容解析层
   skill_bank.py          # skill 加载 + 确定性检索
   feedback_store.py      # append-only ledger + audit helper
@@ -198,7 +198,7 @@ atlas_evolution/
 - JSON skill manifests
 - 确定性本地检索
 - append-only event / feedback 存储
-- formal OpenClaw/Atlas contract
+- formal OpenClaw/Appleseed contract
 - 本地 CLI / HTTP ingest
 - 显式 `openclaw-import`
 - JSON / markdown operator evidence report
@@ -220,7 +220,7 @@ atlas_evolution/
 ## 关键文档
 - [`docs/v1_1_milestone.md`](docs/v1_1_milestone.md) — v1.1 到底交付了什么、价值在哪
 - [`docs/v1_2_productization_roadmap.md`](docs/v1_2_productization_roadmap.md) — 下一阶段产品化路线
-- [`docs/openclaw_atlas_contract.md`](docs/openclaw_atlas_contract.md) — OpenClaw/Atlas 正式 contract
+- [`docs/openclaw_appleseed_contract.md`](docs/openclaw_appleseed_contract.md) — OpenClaw/Appleseed 正式 contract
 - [`docs/operator_review_workflow.md`](docs/operator_review_workflow.md) — review / promotion 工作流
 - [`CHANGELOG.md`](CHANGELOG.md) — 版本变更记录
 
@@ -241,7 +241,7 @@ python3 -m unittest discover -s tests -v
 
 ## 当前状态
 
-Atlas Evolution v1.1 已经是一个**可运行的本地 operator-grade evolution system**，面向 Atlas/OpenClaw 类 runtime。
+Appleseed Evolution v1.1 已经是一个**可运行的本地 operator-grade evolution system**，面向 Appleseed/OpenClaw 类 runtime。
 
 它现在已经适合：
 - governed local demo

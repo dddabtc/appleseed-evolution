@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { resolveSpoolDir } from "./config.js";
-import { detectAtlasPayloadKind } from "./contracts.js";
+import { detectAppleseedPayloadKind } from "./contracts.js";
 import { sha256Hex, stableStringify, stripUndefined, utcNow } from "./json.js";
 
 const SPOOL_FILES = {
@@ -35,11 +35,11 @@ function sleep(ms) {
 function buildHeaders(config) {
   const headers = {
     "content-type": "application/json",
-    "x-atlas-integration": "openclaw-plugin-v0.1",
+    "x-appleseed-integration": "openclaw-plugin-v0.1",
   };
   if (config.apiKey) {
     headers.authorization = `Bearer ${config.apiKey}`;
-    headers["x-atlas-api-key"] = config.apiKey;
+    headers["x-appleseed-api-key"] = config.apiKey;
   }
   return headers;
 }
@@ -67,7 +67,7 @@ export function createTransport(api, config) {
 
   function recordSupport(payload) {
     const normalized = stripUndefined({
-      record_schema: "atlas_evolution.openclaw_plugin_support_capture",
+      record_schema: "appleseed_evolution.openclaw_plugin_support_capture",
       record_version: "0.1",
       ...payload,
     });
@@ -76,9 +76,9 @@ export function createTransport(api, config) {
   }
 
   async function dispatchPayload(payload, options = {}) {
-    const payloadKind = detectAtlasPayloadKind(payload);
+    const payloadKind = detectAppleseedPayloadKind(payload);
     if (!payloadKind) {
-      throw new Error("payload is not Atlas-compatible");
+      throw new Error("payload is not Appleseed-compatible");
     }
 
     const payloadHash = sha256Hex(stableStringify(payload));
@@ -100,9 +100,9 @@ export function createTransport(api, config) {
     const shouldPost = options.post !== false && Boolean(config.baseUrl) && payloadKind === "runtime-event";
     if (!shouldPost) {
       if (payloadKind === "operator-session" && options.post !== false) {
-        result.error = "Atlas Evolution serve exposes /v1/ingest for runtime events only; operator-session artifacts stay spooled for atlas-evolution openclaw-import.";
+        result.error = "Appleseed Evolution serve exposes /v1/ingest for runtime events only; operator-session artifacts stay spooled for appleseed-evolution openclaw-import.";
         result.import_hint =
-          "atlas-evolution openclaw-import expects a single JSON object. Replay one JSONL line from operator-sessions.jsonl or pipe the original artifact payload to stdin.";
+          "appleseed-evolution openclaw-import expects a single JSON object. Replay one JSONL line from operator-sessions.jsonl or pipe the original artifact payload to stdin.";
       }
       recordDeliveryAttempt(
         stripUndefined({
@@ -209,7 +209,7 @@ export function createTransport(api, config) {
       spool_dir: spoolDir,
       base_url: config.baseUrl,
       post_runtime_events: Boolean(config.baseUrl),
-      import_operator_sessions_via: "atlas-evolution openclaw-import",
+      import_operator_sessions_via: "appleseed-evolution openclaw-import",
       counts: {
         runtime_events: countJsonlRecords(runtimeEventsPath),
         operator_sessions: countJsonlRecords(operatorSessionsPath),

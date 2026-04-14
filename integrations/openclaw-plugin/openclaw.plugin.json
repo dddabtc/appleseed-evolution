@@ -1,7 +1,7 @@
 {
-  "id": "atlas-evolution",
-  "name": "Atlas Evolution",
-  "description": "Thin OpenClaw export, spool, and transport bridge for Atlas Evolution runtime events and operator-session artifacts.",
+  "id": "appleseed-evolution",
+  "name": "Appleseed Evolution",
+  "description": "Thin OpenClaw export, spool, and transport bridge for Appleseed Evolution runtime events and operator-session artifacts.",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
@@ -19,7 +19,7 @@
       },
       "spoolDir": {
         "type": "string",
-        "default": ".openclaw/atlas-evolution-spool"
+        "default": ".openclaw/appleseed-evolution-spool"
       },
       "retry": {
         "type": "object",
@@ -60,15 +60,15 @@
   "uiHints": {
     "enabled": {
       "label": "Enabled",
-      "help": "Plugin-local switch for Atlas Evolution export and support capture surfaces."
+      "help": "Plugin-local switch for Appleseed Evolution export and support capture surfaces."
     },
     "baseUrl": {
-      "label": "Atlas Base URL",
-      "help": "Atlas Evolution local HTTP base URL. Runtime-event payloads post to /v1/ingest when this is set."
+      "label": "Appleseed Base URL",
+      "help": "Appleseed Evolution local HTTP base URL. Runtime-event payloads post to /v1/ingest when this is set."
     },
     "apiKey": {
-      "label": "Atlas API Key",
-      "help": "Optional bearer/API-key header added to plugin HTTP exports and Atlas POST attempts.",
+      "label": "Appleseed API Key",
+      "help": "Optional bearer/API-key header added to plugin HTTP exports and Appleseed POST attempts.",
       "sensitive": true
     },
     "spoolDir": {
@@ -77,7 +77,7 @@
     },
     "retry": {
       "label": "Retry Settings",
-      "help": "Deterministic retry policy for optional POST delivery to Atlas Evolution."
+      "help": "Deterministic retry policy for optional POST delivery to Appleseed Evolution."
     },
     "includeTranscript": {
       "label": "Include Transcript",

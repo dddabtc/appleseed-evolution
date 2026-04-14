@@ -1,23 +1,23 @@
-# OpenClaw/Atlas Event Contract
+# OpenClaw/Appleseed Event Contract
 
-This document defines the local integration contract between an OpenClaw-like runtime and Atlas Evolution v1.1.
+This document defines the local integration contract between an OpenClaw-like runtime and Appleseed Evolution v1.1.
 
 The goal is narrow and reviewable:
 
-- preserve the raw inbound evidence exactly as Atlas received it
+- preserve the raw inbound evidence exactly as Appleseed received it
 - project only supported event types into evolution inputs
 - let an operator inspect the raw-to-projected chain before acting on evolution output
 
 ## Contract Summary
 
-Atlas accepts a single event envelope, a list of event envelopes, or a batch object with `events`.
+Appleseed accepts a single event envelope, a list of event envelopes, or a batch object with `events`.
 It also has an explicit `openclaw-import` path for local operator-session artifacts that are adapted into the same event envelope chain.
 
 Per-event envelope:
 
 ```json
 {
-  "contract_name": "openclaw_atlas.runtime_event",
+  "contract_name": "openclaw_appleseed.runtime_event",
   "contract_version": "1.0",
   "envelope_id": "9b1f66ae-5f44-47f8-a1a9-bd5f84d22b70",
   "recorded_at": "2026-03-13T18:22:41+00:00",
@@ -48,7 +48,7 @@ Batch form:
 
 ```json
 {
-  "contract_name": "openclaw_atlas.runtime_event",
+  "contract_name": "openclaw_appleseed.runtime_event",
   "contract_version": "1.0",
   "source": "openclaw-local",
   "metadata": {
@@ -117,8 +117,8 @@ Supported event bodies:
 Shared event fields:
 
 - `schema_version`: currently `1.1`
-- `event_id`: optional; Atlas will generate one when omitted
-- `occurred_at`: optional ISO 8601 timestamp; Atlas will generate one when omitted
+- `event_id`: optional; Appleseed will generate one when omitted
+- `occurred_at`: optional ISO 8601 timestamp; Appleseed will generate one when omitted
 - `session_id`: required
 - `task`: required
 - `steps`: optional list of strings
@@ -134,7 +134,7 @@ Shared event fields:
 
 ## Projection Rules
 
-Atlas stores the raw event envelope first.
+Appleseed stores the raw event envelope first.
 
 Projection is deliberately conservative:
 
@@ -159,10 +159,10 @@ That keeps the operator workflow input conservative while still accepting a more
 
 ## Local Audit Surface
 
-Atlas writes three persistent ledgers plus optional operator report artifacts in the configured state directory:
+Appleseed writes three persistent ledgers plus optional operator report artifacts in the configured state directory:
 
 - `events.jsonl`: routed sessions and direct feedback
-- `runtime_event_envelopes.jsonl`: raw OpenClaw/Atlas event envelopes
+- `runtime_event_envelopes.jsonl`: raw OpenClaw/Appleseed event envelopes
 - `projected_feedback.jsonl`: projected evolution feedback records
 - `reports/openclaw_import_<session-id>.json`: raw imported operator artifact plus the adapted envelopes and projected feedback records
 - `reports/openclaw_operator_handoff_bundle_<session-id>.json`: export bundle that keeps the source artifact, runtime session report, handoff payload, adapted envelopes, and projected feedback together for local replay
@@ -179,7 +179,7 @@ Atlas writes three persistent ledgers plus optional operator report artifacts in
 Operators can inspect the chain with:
 
 ```bash
-python3 -m atlas_evolution.cli inspect --config demo/atlas.toml --write-report
+python3 -m appleseed_evolution.cli inspect --config demo/appleseed.toml --write-report
 ```
 
 That report shows each raw envelope beside the projected feedback record, if any, so the evidence path remains deterministic and reviewable.
@@ -187,8 +187,8 @@ That report shows each raw envelope beside the projected feedback record, if any
 Operators can also build a session-level evidence bundle directly from one or more payloads:
 
 ```bash
-python3 -m atlas_evolution.cli report \
-  --config demo/atlas.toml \
+python3 -m appleseed_evolution.cli report \
+  --config demo/appleseed.toml \
   --file demo/runtime_events/sample_batch.json \
   --format json \
   --write-report
@@ -206,8 +206,8 @@ The report adapter does not call an LLM. It deterministically summarizes:
 Operators can inspect the evolution control plane directly with:
 
 ```bash
-python3 -m atlas_evolution.cli governance \
-  --config demo/atlas.toml \
+python3 -m appleseed_evolution.cli governance \
+  --config demo/appleseed.toml \
   --format markdown \
   --write-report
 ```
@@ -222,8 +222,8 @@ That surface joins each proposal with:
 Operators can replay the exported handoff bundle into a fresh local state directory with:
 
 ```bash
-python3 -m atlas_evolution.cli openclaw-import \
-  --config demo/atlas.toml \
+python3 -m appleseed_evolution.cli openclaw-import \
+  --config demo/appleseed.toml \
   --file demo/state/reports/latest_openclaw_operator_handoff_bundle.json
 ```
 

@@ -1,6 +1,6 @@
 # Operator Review and Promote Workflow
 
-Atlas Evolution keeps proposal review and promotion local, deterministic, and operator-visible.
+Appleseed Evolution keeps proposal review and promotion local, deterministic, and operator-visible.
 The latest workflow checkpoint is also persisted locally so review/promote work can be resumed after a machine restart.
 Runtime evidence imports can also persist a separate OpenClaw handoff artifact before the evolve/review/promote loop starts.
 That handoff export is replayable, so another local operator can restore the review/resume context without rebuilding it by hand.
@@ -10,30 +10,30 @@ That handoff export is replayable, so another local operator can restore the rev
 Generate or refresh the latest evolution report:
 
 ```bash
-python3 -m atlas_evolution.cli evolve --config demo/atlas.toml
+python3 -m appleseed_evolution.cli evolve --config demo/appleseed.toml
 ```
 
 If the upstream runtime handed off a richer local OpenClaw session artifact first, import it before evolving:
 
 ```bash
-python3 -m atlas_evolution.cli openclaw-import \
-  --config demo/atlas.toml \
+python3 -m appleseed_evolution.cli openclaw-import \
+  --config demo/appleseed.toml \
   --file demo/openclaw_sessions/sample_operator_session.json
 ```
 
 If a previous operator already exported the restart-safe bundle, replay it directly:
 
 ```bash
-python3 -m atlas_evolution.cli openclaw-import \
-  --config demo/atlas.toml \
+python3 -m appleseed_evolution.cli openclaw-import \
+  --config demo/appleseed.toml \
   --file demo/state/reports/latest_openclaw_operator_handoff_bundle.json
 ```
 
 Inspect the compact governance summary:
 
 ```bash
-python3 -m atlas_evolution.cli governance \
-  --config demo/atlas.toml \
+python3 -m appleseed_evolution.cli governance \
+  --config demo/appleseed.toml \
   --format markdown \
   --write-report
 ```
@@ -41,8 +41,8 @@ python3 -m atlas_evolution.cli governance \
 Build the operator review queue with change previews:
 
 ```bash
-python3 -m atlas_evolution.cli review \
-  --config demo/atlas.toml \
+python3 -m appleseed_evolution.cli review \
+  --config demo/appleseed.toml \
   --format markdown \
   --write-report
 ```
@@ -50,14 +50,14 @@ python3 -m atlas_evolution.cli review \
 Inspect the restart-safe workflow checkpoint:
 
 ```bash
-python3 -m atlas_evolution.cli resume --config demo/atlas.toml
+python3 -m appleseed_evolution.cli resume --config demo/appleseed.toml
 ```
 
 Dry-run a targeted promotion artifact:
 
 ```bash
-python3 -m atlas_evolution.cli promote \
-  --config demo/atlas.toml \
+python3 -m appleseed_evolution.cli promote \
+  --config demo/appleseed.toml \
   --proposal-id prompt-code_review \
   --dry-run \
   --write-report
@@ -66,8 +66,8 @@ python3 -m atlas_evolution.cli promote \
 Apply the reviewed proposal:
 
 ```bash
-python3 -m atlas_evolution.cli promote \
-  --config demo/atlas.toml \
+python3 -m appleseed_evolution.cli promote \
+  --config demo/appleseed.toml \
   --proposal-id prompt-code_review \
   --write-report
 ```
@@ -75,8 +75,8 @@ python3 -m atlas_evolution.cli promote \
 Re-apply the most recent dry-run selection after a restart:
 
 ```bash
-python3 -m atlas_evolution.cli promote \
-  --config demo/atlas.toml \
+python3 -m appleseed_evolution.cli promote \
+  --config demo/appleseed.toml \
   --resume-last
 ```
 
@@ -104,7 +104,7 @@ This keeps the promotion surface reviewable even when no files are changed.
 
 ## Restart Recovery
 
-Atlas now keeps three restart-oriented files in the local state directory:
+Appleseed now keeps three restart-oriented files in the local state directory:
 
 - `latest_workflow_state.json`: current workflow stage, source evolution report, resume commands, and ledger pointers
 - `workflow_history.jsonl`: append-only checkpoint history for each evolve/review/promote transition
@@ -112,7 +112,7 @@ Atlas now keeps three restart-oriented files in the local state directory:
 
 That means a machine restart does not require rebuilding the operator queue from memory or terminal scrollback.
 
-For runtime-session handoff before `evolve`, Atlas also writes:
+For runtime-session handoff before `evolve`, Appleseed also writes:
 
 - `reports/latest_openclaw_import.json`: latest raw OpenClaw session artifact plus the adapted envelope chain
 - `reports/latest_runtime_session_report.json`: latest session-level evidence bundle for local review

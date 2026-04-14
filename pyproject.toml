@@ -3,15 +3,15 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "atlas-evolution"
+name = "appleseed-evolution"
 version = "0.1.0"
-description = "Governed local evolution layer for Atlas-like agents."
+description = "Governed local evolution layer for Appleseed-like agents."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = []
 
 [project.scripts]
-atlas-evolution = "atlas_evolution.cli:main"
+appleseed-evolution = "appleseed_evolution.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["atlas_evolution*"]
+include = ["appleseed_evolution*"]

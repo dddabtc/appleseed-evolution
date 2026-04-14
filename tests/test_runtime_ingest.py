@@ -7,12 +7,12 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from atlas_evolution.cli import main
-from atlas_evolution.config import load_config
-from atlas_evolution.runtime.orchestrator import AtlasOrchestrator
-from atlas_evolution.runtime.openclaw_adapter import adapt_openclaw_operator_session_artifact
-from atlas_evolution.runtime.proxy import make_handler
-from atlas_evolution.runtime_events import parse_runtime_session_events
+from appleseed_evolution.cli import main
+from appleseed_evolution.config import load_config
+from appleseed_evolution.runtime.orchestrator import AppleseedOrchestrator
+from appleseed_evolution.runtime.openclaw_adapter import adapt_openclaw_operator_session_artifact
+from appleseed_evolution.runtime.proxy import make_handler
+from appleseed_evolution.runtime_events import parse_runtime_session_events
 
 
 def write_skill(path: Path, payload: dict[str, object]) -> None:
@@ -36,7 +36,7 @@ def write_config(path: Path) -> None:
     )
 
 
-def build_orchestrator(root: Path) -> tuple[AtlasOrchestrator, Path]:
+def build_orchestrator(root: Path) -> tuple[AppleseedOrchestrator, Path]:
     skills_dir = root / "skills"
     state_dir = root / "state"
     skills_dir.mkdir()
@@ -52,9 +52,9 @@ def build_orchestrator(root: Path) -> tuple[AtlasOrchestrator, Path]:
             "instructions": ["focus on real bugs"],
         },
     )
-    config_path = root / "atlas.toml"
+    config_path = root / "appleseed.toml"
     write_config(config_path)
-    return AtlasOrchestrator(load_config(config_path)), config_path
+    return AppleseedOrchestrator(load_config(config_path)), config_path
 
 
 class RuntimeIngestTests(unittest.TestCase):
@@ -139,7 +139,7 @@ class RuntimeIngestTests(unittest.TestCase):
                 payload["handoff_bundle_path"],
             )
 
-            orchestrator = AtlasOrchestrator(load_config(config_path))
+            orchestrator = AppleseedOrchestrator(load_config(config_path))
             raw_envelopes = orchestrator.feedback_store.iter_runtime_event_envelopes()
             self.assertEqual(len(raw_envelopes), 2)
             self.assertEqual(
@@ -283,7 +283,7 @@ class RuntimeIngestTests(unittest.TestCase):
                 replay_payload["handoff_bundle_path"],
             )
 
-            target_orchestrator = AtlasOrchestrator(load_config(target_config))
+            target_orchestrator = AppleseedOrchestrator(load_config(target_config))
             self.assertEqual(len(target_orchestrator.feedback_store.iter_runtime_event_envelopes()), 2)
             self.assertEqual(len(target_orchestrator.feedback_store.iter_projected_feedback_records()), 1)
 
@@ -357,7 +357,7 @@ class RuntimeIngestTests(unittest.TestCase):
             payload_path.write_text(
                 json.dumps(
                     {
-                        "contract_name": "openclaw_atlas.runtime_event",
+                        "contract_name": "openclaw_appleseed.runtime_event",
                         "contract_version": "1.0",
                         "source": "openclaw-local",
                         "metadata": {"operator": "test-suite"},
@@ -392,7 +392,7 @@ class RuntimeIngestTests(unittest.TestCase):
             self.assertEqual(result, 0)
             payload = json.loads(stdout.getvalue())
             self.assertEqual(payload["projected_feedback_records"], 1)
-            orchestrator = AtlasOrchestrator(load_config(config_path))
+            orchestrator = AppleseedOrchestrator(load_config(config_path))
             raw_envelopes = orchestrator.feedback_store.iter_runtime_event_envelopes()
             self.assertEqual(len(raw_envelopes), 2)
             self.assertEqual(raw_envelopes[0].metadata["operator"], "test-suite")
@@ -413,7 +413,7 @@ class RuntimeIngestTests(unittest.TestCase):
 
             orchestrator.ingest_runtime_events(
                 {
-                    "contract_name": "openclaw_atlas.runtime_event",
+                    "contract_name": "openclaw_appleseed.runtime_event",
                     "contract_version": "1.0",
                     "source": "openclaw-local",
                     "metadata": {"operator": "local-audit"},
@@ -472,7 +472,7 @@ class RuntimeIngestTests(unittest.TestCase):
             started_path.write_text(
                 json.dumps(
                     {
-                        "contract_name": "openclaw_atlas.runtime_event",
+                        "contract_name": "openclaw_appleseed.runtime_event",
                         "contract_version": "1.0",
                         "source": "openclaw-local",
                         "envelope_id": "env-start",
@@ -495,7 +495,7 @@ class RuntimeIngestTests(unittest.TestCase):
             feedback_path.write_text(
                 json.dumps(
                     {
-                        "contract_name": "openclaw_atlas.runtime_event",
+                        "contract_name": "openclaw_appleseed.runtime_event",
                         "contract_version": "1.0",
                         "source": "openclaw-local",
                         "envelope_id": "env-feedback",
@@ -570,7 +570,7 @@ class RuntimeIngestTests(unittest.TestCase):
             payload_path.write_text(
                 json.dumps(
                     {
-                        "contract_name": "openclaw_atlas.runtime_event",
+                        "contract_name": "openclaw_appleseed.runtime_event",
                         "contract_version": "1.0",
                         "source": "openclaw-local",
                         "metadata": {"operator": "test-suite"},
@@ -622,7 +622,7 @@ class RuntimeIngestTests(unittest.TestCase):
 
             self.assertEqual(result, 0)
             output = stdout.getvalue()
-            self.assertIn("# Atlas Runtime Session Report", output)
+            self.assertIn("# Appleseed Runtime Session Report", output)
             self.assertIn("## Raw Session Outcome", output)
             self.assertIn("- Status: failure", output)
             self.assertIn("## Projected Evolution Signals", output)
@@ -640,7 +640,7 @@ class RuntimeIngestTests(unittest.TestCase):
 
             orchestrator.ingest_runtime_events(
                 {
-                    "source": "atlas-runtime",
+                    "source": "appleseed-runtime",
                     "event_kind": "session_feedback",
                     "session_id": "runtime-1",
                     "task": "review postgres migration rollback safety",
@@ -749,7 +749,7 @@ class RuntimeIngestTests(unittest.TestCase):
             prompt = next(item for item in payload["proposals"] if item["proposal_id"] == "prompt-code_review")
             self.assertIn("ready", prompt["review_labels"])
             self.assertIn("rollback_sensitive", prompt["review_labels"])
-            self.assertIn("atlas-evolution promote --proposal-id prompt-code_review", prompt["promotion_command"])
+            self.assertIn("appleseed-evolution promote --proposal-id prompt-code_review", prompt["promotion_command"])
             self.assertIn("---", prompt["change_preview"]["diff"])
             self.assertTrue(Path(payload["operator_review_report_path"]).exists())
             self.assertTrue(Path(payload["workflow_state_path"]).exists())
@@ -967,7 +967,7 @@ class RuntimeIngestTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_runtime_session_events(
                 {
-                    "source": "atlas-runtime",
+                    "source": "appleseed-runtime",
                     "event_kind": "session_feedback",
                     "session_id": "sess-invalid",
                     "task": "review postgres migration rollback safety",

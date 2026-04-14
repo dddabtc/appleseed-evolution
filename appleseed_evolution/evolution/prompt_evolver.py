@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 
-from atlas_evolution.models import EvolutionProposal, FeedbackRecord, Skill
-from atlas_evolution.skill_bank import tokenize
+from appleseed_evolution.models import EvolutionProposal, FeedbackRecord, Skill
+from appleseed_evolution.skill_bank import tokenize
 
 STOPWORDS = {
     "a",

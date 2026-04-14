@@ -9,8 +9,8 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from atlas_evolution.openclaw_contract import parse_openclaw_atlas_event_envelopes
-from atlas_evolution.runtime.openclaw_adapter import parse_openclaw_operator_session_artifact
+from appleseed_evolution.openclaw_contract import parse_openclaw_appleseed_event_envelopes
+from appleseed_evolution.runtime.openclaw_adapter import parse_openclaw_operator_session_artifact
 
 
 def main() -> int:
@@ -20,7 +20,7 @@ def main() -> int:
         (plugin_dir / "fixtures" / "operator_session_artifact.json").read_text(encoding="utf-8")
     )
 
-    envelopes = parse_openclaw_atlas_event_envelopes(runtime_fixture)
+    envelopes = parse_openclaw_appleseed_event_envelopes(runtime_fixture)
     artifact = parse_openclaw_operator_session_artifact(operator_fixture)
     adapted = artifact.to_event_envelopes()
 

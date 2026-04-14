@@ -1,4 +1,4 @@
-from atlas_evolution.cli import main
+from appleseed_evolution.cli import main
 
 
 if __name__ == "__main__":

@@ -4,14 +4,14 @@ import tempfile
 from pathlib import Path
 import unittest
 
-from atlas_evolution.config import load_config, write_default_config
+from appleseed_evolution.config import load_config, write_default_config
 
 
 class ConfigTests(unittest.TestCase):
     def test_relative_paths_resolve_from_config_location(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            config_path = root / "demo" / "atlas.toml"
+            config_path = root / "demo" / "appleseed.toml"
             write_default_config(config_path)
             config = load_config(config_path)
             self.assertEqual(config.paths.skills_dir, (root / "demo" / "skills").resolve())

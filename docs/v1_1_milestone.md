@@ -1,7 +1,7 @@
-# Atlas Evolution v1.1 Milestone
+# Appleseed Evolution v1.1 Milestone
 
 ## Release summary
-Atlas Evolution v1.1 is the first version that feels like an operator-grade evolution system instead of a "self-improving agent" demo shell.
+Appleseed Evolution v1.1 is the first version that feels like an operator-grade evolution system instead of a "self-improving agent" demo shell.
 
 This milestone is intentionally conservative:
 - local only
@@ -22,8 +22,8 @@ It does **not** claim online autonomous learning is solved.
 - projected evolution-feedback ledger
 - inspect command for raw → projected audit path
 
-### OpenClaw / Atlas integration surface
-- formal OpenClaw/Atlas contract
+### OpenClaw / Appleseed integration surface
+- formal OpenClaw/Appleseed contract
 - explicit `openclaw-import` command
 - import path for realistic OpenClaw operator session artifacts
 - report output that surfaces OpenClaw handoff context
@@ -44,7 +44,7 @@ MetaClaw mainly packages:
 - auto skill evolution story
 - optional RL / training hooks
 
-Atlas Evolution v1.1 goes deeper on the parts MetaClaw leaves thin:
+Appleseed Evolution v1.1 goes deeper on the parts MetaClaw leaves thin:
 - auditability
 - governance
 - operator reviewability
@@ -77,7 +77,7 @@ The system can now:
 ## Recommended framing
 Describe v1.1 as:
 
-> A governed local evolution control plane for Atlas/OpenClaw-style agents.
+> A governed local evolution control plane for Appleseed/OpenClaw-style agents.
 
 Not as:
 - AGI self-improvement

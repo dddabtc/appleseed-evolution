@@ -6,13 +6,13 @@ from pathlib import Path
 import shlex
 from typing import Any
 
-from atlas_evolution.models import ProjectedFeedbackRecord, compact_dict
-from atlas_evolution.openclaw_contract import (
-    ALLOWED_OPENCLAW_ATLAS_FEEDBACK_STATUSES,
-    OpenClawAtlasEventEnvelope,
-    OpenClawAtlasSessionFeedback,
-    OpenClawAtlasSessionStarted,
-    parse_openclaw_atlas_event_envelopes,
+from appleseed_evolution.models import ProjectedFeedbackRecord, compact_dict
+from appleseed_evolution.openclaw_contract import (
+    ALLOWED_OPENCLAW_APPLESEED_FEEDBACK_STATUSES,
+    OpenClawAppleseedEventEnvelope,
+    OpenClawAppleseedSessionFeedback,
+    OpenClawAppleseedSessionStarted,
+    parse_openclaw_appleseed_event_envelopes,
 )
 
 OPENCLAW_OPERATOR_SESSION_ARTIFACT_KIND = "openclaw_operator_session"
@@ -140,10 +140,10 @@ class OpenClawOperatorOutcome:
 
     def __post_init__(self) -> None:
         self.occurred_at = _validate_timestamp(self.occurred_at, "occurred_at")
-        if self.status not in ALLOWED_OPENCLAW_ATLAS_FEEDBACK_STATUSES:
+        if self.status not in ALLOWED_OPENCLAW_APPLESEED_FEEDBACK_STATUSES:
             raise ValueError(
                 "Field 'status' must be one of: "
-                + ", ".join(sorted(ALLOWED_OPENCLAW_ATLAS_FEEDBACK_STATUSES))
+                + ", ".join(sorted(ALLOWED_OPENCLAW_APPLESEED_FEEDBACK_STATUSES))
                 + "."
             )
         if not 0.0 <= self.score <= 1.0:
@@ -254,7 +254,7 @@ class OpenClawOperatorSessionArtifact:
             }
         )
 
-    def to_event_envelopes(self) -> list[OpenClawAtlasEventEnvelope]:
+    def to_event_envelopes(self) -> list[OpenClawAppleseedEventEnvelope]:
         timeline = [item.to_dict() for item in self.timeline]
         last_checkpoint = self.last_checkpoint()
         envelope_metadata = compact_dict(
@@ -284,10 +284,10 @@ class OpenClawOperatorSessionArtifact:
             }
         )
         envelopes = [
-            OpenClawAtlasEventEnvelope(
+            OpenClawAppleseedEventEnvelope(
                 source=self.source,
                 metadata=dict(envelope_metadata),
-                event=OpenClawAtlasSessionStarted(
+                event=OpenClawAppleseedSessionStarted(
                     session_id=self.session_id,
                     task=self.task,
                     occurred_at=self.started_at,
@@ -302,10 +302,10 @@ class OpenClawOperatorSessionArtifact:
             feedback_metadata = dict(common_event_metadata)
             feedback_metadata["outcome_metadata"] = dict(self.outcome.metadata)
             envelopes.append(
-                OpenClawAtlasEventEnvelope(
+                OpenClawAppleseedEventEnvelope(
                     source=self.source,
                     metadata=dict(envelope_metadata),
-                    event=OpenClawAtlasSessionFeedback(
+                    event=OpenClawAppleseedSessionFeedback(
                         session_id=self.session_id,
                         task=self.task,
                         occurred_at=self.outcome.occurred_at,
@@ -399,7 +399,7 @@ def parse_openclaw_operator_session_artifact(payload: Any) -> OpenClawOperatorSe
     )
 
 
-def adapt_openclaw_operator_session_artifact(payload: Any) -> tuple[OpenClawOperatorSessionArtifact, list[OpenClawAtlasEventEnvelope]]:
+def adapt_openclaw_operator_session_artifact(payload: Any) -> tuple[OpenClawOperatorSessionArtifact, list[OpenClawAppleseedEventEnvelope]]:
     artifact = parse_openclaw_operator_session_artifact(payload)
     return artifact, artifact.to_event_envelopes()
 
@@ -436,7 +436,7 @@ def parse_openclaw_operator_handoff_bundle(
         raise ValueError("Field 'runtime_session_report' must be an object when provided.")
 
     artifact = parse_openclaw_operator_session_artifact(source_artifact_payload)
-    envelopes = parse_openclaw_atlas_event_envelopes(adapted_envelopes_payload)
+    envelopes = parse_openclaw_appleseed_event_envelopes(adapted_envelopes_payload)
     projected_records = [ProjectedFeedbackRecord.from_dict(item) for item in projected_feedback_payload]
     session_id = artifact.session_id
     if any(item.event.session_id != session_id for item in envelopes):
@@ -468,7 +468,7 @@ def build_openclaw_operator_handoff_payload(
     *,
     config_path: str | Path,
     state_dir: str | Path,
-    envelopes: list[OpenClawAtlasEventEnvelope],
+    envelopes: list[OpenClawAppleseedEventEnvelope],
     projected_records: list[ProjectedFeedbackRecord],
 ) -> dict[str, Any]:
     config_ref = shlex.quote(str(config_path))
@@ -481,7 +481,7 @@ def build_openclaw_operator_handoff_payload(
     if artifact.handoff is not None and artifact.handoff.summary:
         summary = artifact.handoff.summary
     elif artifact.outcome is not None:
-        summary = "Terminal OpenClaw outcome imported into Atlas runtime ledgers."
+        summary = "Terminal OpenClaw outcome imported into Appleseed runtime ledgers."
     else:
         summary = "OpenClaw session imported without a terminal outcome. Operator follow-up is still required."
     next_action = None
@@ -492,13 +492,13 @@ def build_openclaw_operator_handoff_payload(
     else:
         next_action = "Continue the session or record final feedback before evolving local skills."
     resume_commands = {
-        "inspect": f"atlas-evolution inspect --config {config_ref} --session-id {artifact.session_id} --write-report",
+        "inspect": f"appleseed-evolution inspect --config {config_ref} --session-id {artifact.session_id} --write-report",
     }
     if artifact.outcome is not None:
-        resume_commands["evolve"] = f"atlas-evolution evolve --config {config_ref}"
+        resume_commands["evolve"] = f"appleseed-evolution evolve --config {config_ref}"
     else:
         resume_commands["record_feedback"] = (
-            f"atlas-evolution feedback --config {config_ref} --session-id {artifact.session_id} "
+            f"appleseed-evolution feedback --config {config_ref} --session-id {artifact.session_id} "
             f"--task {task_ref} --status failure --score 0.0"
         )
     return {
@@ -532,7 +532,7 @@ def build_openclaw_operator_handoff_bundle_payload(
     *,
     handoff: dict[str, Any],
     runtime_session_report: dict[str, Any],
-    envelopes: list[OpenClawAtlasEventEnvelope],
+    envelopes: list[OpenClawAppleseedEventEnvelope],
     projected_records: list[ProjectedFeedbackRecord],
     artifact_paths: dict[str, str],
 ) -> dict[str, Any]:
@@ -550,7 +550,7 @@ def build_openclaw_operator_handoff_bundle_payload(
         "projected_feedback": [item.to_dict() for item in projected_records],
         "artifact_paths": dict(artifact_paths),
         "export_notes": [
-            "This bundle can be re-imported locally with atlas-evolution openclaw-import.",
+            "This bundle can be re-imported locally with appleseed-evolution openclaw-import.",
             "Adapted envelopes and projected feedback are preserved so review and replay do not depend on terminal scrollback.",
         ],
     }

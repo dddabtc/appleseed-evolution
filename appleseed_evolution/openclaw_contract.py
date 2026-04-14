@@ -5,13 +5,13 @@ from datetime import UTC, datetime
 from typing import Any
 import uuid
 
-from atlas_evolution.models import FeedbackRecord, ProjectedFeedbackRecord, compact_dict
+from appleseed_evolution.models import FeedbackRecord, ProjectedFeedbackRecord, compact_dict
 
-OPENCLAW_ATLAS_CONTRACT_NAME = "openclaw_atlas.runtime_event"
-OPENCLAW_ATLAS_CONTRACT_VERSION = "1.0"
-OPENCLAW_ATLAS_EVENT_SCHEMA_VERSION = "1.1"
-ALLOWED_OPENCLAW_ATLAS_EVENT_KINDS = {"session_started", "session_feedback"}
-ALLOWED_OPENCLAW_ATLAS_FEEDBACK_STATUSES = {"success", "failure", "partial", "cancelled", "unknown"}
+OPENCLAW_APPLESEED_CONTRACT_NAME = "openclaw_appleseed.runtime_event"
+OPENCLAW_APPLESEED_CONTRACT_VERSION = "1.0"
+OPENCLAW_APPLESEED_EVENT_SCHEMA_VERSION = "1.1"
+ALLOWED_OPENCLAW_APPLESEED_EVENT_KINDS = {"session_started", "session_feedback"}
+ALLOWED_OPENCLAW_APPLESEED_FEEDBACK_STATUSES = {"success", "failure", "partial", "cancelled", "unknown"}
 
 
 def _utc_now() -> str:
@@ -58,12 +58,12 @@ def _metadata_dict(value: Any, field_name: str = "metadata") -> dict[str, Any]:
 
 
 @dataclass(slots=True)
-class OpenClawAtlasSessionStarted:
+class OpenClawAppleseedSessionStarted:
     session_id: str
     task: str
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     occurred_at: str = field(default_factory=_utc_now)
-    schema_version: str = OPENCLAW_ATLAS_EVENT_SCHEMA_VERSION
+    schema_version: str = OPENCLAW_APPLESEED_EVENT_SCHEMA_VERSION
     steps: list[str] = field(default_factory=list)
     selected_skill_ids: list[str] = field(default_factory=list)
     missing_capabilities: list[str] = field(default_factory=list)
@@ -74,10 +74,10 @@ class OpenClawAtlasSessionStarted:
         return "session_started"
 
     def __post_init__(self) -> None:
-        if self.schema_version != OPENCLAW_ATLAS_EVENT_SCHEMA_VERSION:
+        if self.schema_version != OPENCLAW_APPLESEED_EVENT_SCHEMA_VERSION:
             raise ValueError(
                 f"Unsupported schema_version '{self.schema_version}'. "
-                f"Expected '{OPENCLAW_ATLAS_EVENT_SCHEMA_VERSION}'."
+                f"Expected '{OPENCLAW_APPLESEED_EVENT_SCHEMA_VERSION}'."
             )
         if not self.session_id:
             raise ValueError("Field 'session_id' must be a non-empty string.")
@@ -103,14 +103,14 @@ class OpenClawAtlasSessionStarted:
 
 
 @dataclass(slots=True)
-class OpenClawAtlasSessionFeedback:
+class OpenClawAppleseedSessionFeedback:
     session_id: str
     task: str
     status: str
     score: float
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     occurred_at: str = field(default_factory=_utc_now)
-    schema_version: str = OPENCLAW_ATLAS_EVENT_SCHEMA_VERSION
+    schema_version: str = OPENCLAW_APPLESEED_EVENT_SCHEMA_VERSION
     comment: str | None = None
     steps: list[str] = field(default_factory=list)
     selected_skill_ids: list[str] = field(default_factory=list)
@@ -122,20 +122,20 @@ class OpenClawAtlasSessionFeedback:
         return "session_feedback"
 
     def __post_init__(self) -> None:
-        if self.schema_version != OPENCLAW_ATLAS_EVENT_SCHEMA_VERSION:
+        if self.schema_version != OPENCLAW_APPLESEED_EVENT_SCHEMA_VERSION:
             raise ValueError(
                 f"Unsupported schema_version '{self.schema_version}'. "
-                f"Expected '{OPENCLAW_ATLAS_EVENT_SCHEMA_VERSION}'."
+                f"Expected '{OPENCLAW_APPLESEED_EVENT_SCHEMA_VERSION}'."
             )
         if not self.session_id:
             raise ValueError("Field 'session_id' must be a non-empty string.")
         if not self.task:
             raise ValueError("Field 'task' must be a non-empty string.")
         self.occurred_at = _validate_timestamp(self.occurred_at, "occurred_at")
-        if self.status not in ALLOWED_OPENCLAW_ATLAS_FEEDBACK_STATUSES:
+        if self.status not in ALLOWED_OPENCLAW_APPLESEED_FEEDBACK_STATUSES:
             raise ValueError(
                 "Field 'status' must be one of: "
-                + ", ".join(sorted(ALLOWED_OPENCLAW_ATLAS_FEEDBACK_STATUSES))
+                + ", ".join(sorted(ALLOWED_OPENCLAW_APPLESEED_FEEDBACK_STATUSES))
                 + "."
             )
         if not 0.0 <= self.score <= 1.0:
@@ -161,29 +161,29 @@ class OpenClawAtlasSessionFeedback:
         )
 
 
-OpenClawAtlasEvent = OpenClawAtlasSessionStarted | OpenClawAtlasSessionFeedback
+OpenClawAppleseedEvent = OpenClawAppleseedSessionStarted | OpenClawAppleseedSessionFeedback
 
 
 @dataclass(slots=True)
-class OpenClawAtlasEventEnvelope:
+class OpenClawAppleseedEventEnvelope:
     source: str
-    event: OpenClawAtlasEvent
+    event: OpenClawAppleseedEvent
     envelope_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     recorded_at: str = field(default_factory=_utc_now)
-    contract_name: str = OPENCLAW_ATLAS_CONTRACT_NAME
-    contract_version: str = OPENCLAW_ATLAS_CONTRACT_VERSION
+    contract_name: str = OPENCLAW_APPLESEED_CONTRACT_NAME
+    contract_version: str = OPENCLAW_APPLESEED_CONTRACT_VERSION
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if self.contract_name != OPENCLAW_ATLAS_CONTRACT_NAME:
+        if self.contract_name != OPENCLAW_APPLESEED_CONTRACT_NAME:
             raise ValueError(
                 f"Unsupported contract_name '{self.contract_name}'. "
-                f"Expected '{OPENCLAW_ATLAS_CONTRACT_NAME}'."
+                f"Expected '{OPENCLAW_APPLESEED_CONTRACT_NAME}'."
             )
-        if self.contract_version != OPENCLAW_ATLAS_CONTRACT_VERSION:
+        if self.contract_version != OPENCLAW_APPLESEED_CONTRACT_VERSION:
             raise ValueError(
                 f"Unsupported contract_version '{self.contract_version}'. "
-                f"Expected '{OPENCLAW_ATLAS_CONTRACT_VERSION}'."
+                f"Expected '{OPENCLAW_APPLESEED_CONTRACT_VERSION}'."
             )
         if not self.source:
             raise ValueError("Field 'source' must be a non-empty string.")
@@ -203,7 +203,7 @@ class OpenClawAtlasEventEnvelope:
         )
 
     def to_projected_feedback_record(self) -> ProjectedFeedbackRecord | None:
-        if not isinstance(self.event, OpenClawAtlasSessionFeedback):
+        if not isinstance(self.event, OpenClawAppleseedSessionFeedback):
             return None
         return ProjectedFeedbackRecord(
             projection_id=str(uuid.uuid4()),
@@ -234,14 +234,14 @@ class OpenClawAtlasEventEnvelope:
         )
 
 
-def _parse_event(payload: dict[str, Any]) -> OpenClawAtlasEvent:
+def _parse_event(payload: dict[str, Any]) -> OpenClawAppleseedEvent:
     event_kind = _require_non_empty_string(payload, "event_kind")
-    if event_kind not in ALLOWED_OPENCLAW_ATLAS_EVENT_KINDS:
+    if event_kind not in ALLOWED_OPENCLAW_APPLESEED_EVENT_KINDS:
         raise ValueError(
-            f"Field 'event_kind' must be one of: {', '.join(sorted(ALLOWED_OPENCLAW_ATLAS_EVENT_KINDS))}."
+            f"Field 'event_kind' must be one of: {', '.join(sorted(ALLOWED_OPENCLAW_APPLESEED_EVENT_KINDS))}."
         )
     common = {
-        "schema_version": str(payload.get("schema_version", OPENCLAW_ATLAS_EVENT_SCHEMA_VERSION)),
+        "schema_version": str(payload.get("schema_version", OPENCLAW_APPLESEED_EVENT_SCHEMA_VERSION)),
         "event_id": str(payload.get("event_id") or uuid.uuid4()),
         "occurred_at": _validate_timestamp(str(payload.get("occurred_at", _utc_now())), "occurred_at"),
         "session_id": _require_non_empty_string(payload, "session_id"),
@@ -252,13 +252,13 @@ def _parse_event(payload: dict[str, Any]) -> OpenClawAtlasEvent:
         "metadata": _metadata_dict(payload.get("metadata"), "metadata"),
     }
     if event_kind == "session_started":
-        return OpenClawAtlasSessionStarted(**common)
+        return OpenClawAppleseedSessionStarted(**common)
     score = payload.get("score")
     try:
         parsed_score = float(score)
     except (TypeError, ValueError) as error:
         raise ValueError("Field 'score' must be a number.") from error
-    return OpenClawAtlasSessionFeedback(
+    return OpenClawAppleseedSessionFeedback(
         **common,
         status=_require_non_empty_string(payload, "status"),
         score=parsed_score,
@@ -269,10 +269,10 @@ def _parse_event(payload: dict[str, Any]) -> OpenClawAtlasEvent:
 def _parse_envelope(
     payload: dict[str, Any],
     default_source: str | None = None,
-    default_contract_name: str = OPENCLAW_ATLAS_CONTRACT_NAME,
-    default_contract_version: str = OPENCLAW_ATLAS_CONTRACT_VERSION,
+    default_contract_name: str = OPENCLAW_APPLESEED_CONTRACT_NAME,
+    default_contract_version: str = OPENCLAW_APPLESEED_CONTRACT_VERSION,
     default_metadata: dict[str, Any] | None = None,
-) -> OpenClawAtlasEventEnvelope:
+) -> OpenClawAppleseedEventEnvelope:
     if "event" in payload:
         raw_event = payload.get("event")
         if not isinstance(raw_event, dict):
@@ -293,7 +293,7 @@ def _parse_envelope(
         contract_version = default_contract_version
         envelope_id = str(uuid.uuid4())
         recorded_at = _utc_now()
-    return OpenClawAtlasEventEnvelope(
+    return OpenClawAppleseedEventEnvelope(
         contract_name=contract_name,
         contract_version=contract_version,
         envelope_id=envelope_id,
@@ -304,11 +304,11 @@ def _parse_envelope(
     )
 
 
-def parse_openclaw_atlas_event_envelopes(payload: Any) -> list[OpenClawAtlasEventEnvelope]:
+def parse_openclaw_appleseed_event_envelopes(payload: Any) -> list[OpenClawAppleseedEventEnvelope]:
     raw_items: list[dict[str, Any]]
     default_source: str | None = None
-    default_contract_name = OPENCLAW_ATLAS_CONTRACT_NAME
-    default_contract_version = OPENCLAW_ATLAS_CONTRACT_VERSION
+    default_contract_name = OPENCLAW_APPLESEED_CONTRACT_NAME
+    default_contract_version = OPENCLAW_APPLESEED_CONTRACT_VERSION
     default_metadata: dict[str, Any] = {}
     if isinstance(payload, dict) and "events" in payload:
         raw_value = payload["events"]
@@ -319,8 +319,8 @@ def parse_openclaw_atlas_event_envelopes(payload: Any) -> list[OpenClawAtlasEven
         if source_value is not None and not isinstance(source_value, str):
             raise ValueError("Field 'source' must be a string when provided.")
         default_source = source_value.strip() if isinstance(source_value, str) else None
-        default_contract_name = str(payload.get("contract_name", OPENCLAW_ATLAS_CONTRACT_NAME))
-        default_contract_version = str(payload.get("contract_version", OPENCLAW_ATLAS_CONTRACT_VERSION))
+        default_contract_name = str(payload.get("contract_name", OPENCLAW_APPLESEED_CONTRACT_NAME))
+        default_contract_version = str(payload.get("contract_version", OPENCLAW_APPLESEED_CONTRACT_VERSION))
         default_metadata = _metadata_dict(payload.get("metadata"), "metadata")
     elif isinstance(payload, list):
         raw_items = payload

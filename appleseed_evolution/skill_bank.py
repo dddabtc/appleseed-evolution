@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 from typing import Any
 
-from atlas_evolution.models import Skill, SkillMatch
+from appleseed_evolution.models import Skill, SkillMatch
 
 TOKEN_RE = re.compile(r"[a-z0-9_]+")
 STOPWORDS = {
@@ -83,7 +83,7 @@ class SkillBank:
         return matches[:top_k]
 
     def build_prompt_bundle(self, matches: list[SkillMatch]) -> str:
-        lines = ["Atlas Evolution skill context:"]
+        lines = ["Appleseed Evolution skill context:"]
         if not matches:
             lines.append("- No matching local skills were found.")
             return "\n".join(lines)

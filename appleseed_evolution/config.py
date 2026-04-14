@@ -23,7 +23,7 @@ class RuntimeConfig:
 
 
 @dataclass(frozen=True, slots=True)
-class AtlasConfig:
+class AppleseedConfig:
     paths: PathConfig
     runtime: RuntimeConfig
 
@@ -35,7 +35,7 @@ def _resolve(base_dir: Path, raw_path: str, fallback: str) -> Path:
     return path
 
 
-def load_config(path: str | Path) -> AtlasConfig:
+def load_config(path: str | Path) -> AppleseedConfig:
     config_path = Path(path).expanduser().resolve()
     data = tomllib.loads(config_path.read_text(encoding="utf-8"))
     base_dir = config_path.parent
@@ -53,7 +53,7 @@ def load_config(path: str | Path) -> AtlasConfig:
         host=str(runtime_data.get("host", "127.0.0.1")),
         port=int(runtime_data.get("port", 8765)),
     )
-    return AtlasConfig(paths=paths, runtime=runtime)
+    return AppleseedConfig(paths=paths, runtime=runtime)
 
 
 def default_config_text() -> str:

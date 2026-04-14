@@ -6,8 +6,8 @@ from pathlib import Path
 import shlex
 from typing import Any
 
-from atlas_evolution.feedback_store import FeedbackStore, utc_now
-from atlas_evolution.models import EvolutionReport
+from appleseed_evolution.feedback_store import FeedbackStore, utc_now
+from appleseed_evolution.models import EvolutionReport
 
 
 def workflow_id_for_report(report: EvolutionReport) -> str:
@@ -106,7 +106,7 @@ def build_resume_payload(store: FeedbackStore) -> dict[str, Any]:
 
 def render_resume_markdown(payload: dict[str, Any]) -> str:
     lines = [
-        "# Atlas Workflow Resume",
+        "# Appleseed Workflow Resume",
         "",
         f"- Workflow ID: {payload['workflow_id']}",
         f"- Stage: {payload['stage']}",
@@ -166,16 +166,16 @@ def _build_resume_commands(
     config_ref = shlex.quote(str(config_path))
     report_ref = shlex.quote(str(source_report))
     selected_flags = " ".join(f"--proposal-id {shlex.quote(item)}" for item in selected_proposals)
-    promote_base = f"atlas-evolution promote --config {config_ref} --report {report_ref}".strip()
+    promote_base = f"appleseed-evolution promote --config {config_ref} --report {report_ref}".strip()
     if selected_flags:
         promote_base = f"{promote_base} {selected_flags}"
     commands = {
-        "review": f"atlas-evolution review --config {config_ref} --report {report_ref}",
+        "review": f"appleseed-evolution review --config {config_ref} --report {report_ref}",
         "promote_dry_run": f"{promote_base} --dry-run",
         "promote_apply": promote_base,
     }
     if selected_proposals:
-        commands["promote_resume_last"] = f"atlas-evolution promote --config {config_ref} --resume-last"
+        commands["promote_resume_last"] = f"appleseed-evolution promote --config {config_ref} --resume-last"
     return commands
 
 

@@ -4,12 +4,12 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import registerAtlasEvolutionPlugin, {
-  OPENCLAW_ATLAS_CONTRACT_NAME,
+import registerAppleseedEvolutionPlugin, {
+  OPENCLAW_APPLESEED_CONTRACT_NAME,
   OPENCLAW_OPERATOR_SESSION_ARTIFACT_KIND,
   buildOperatorSessionArtifact,
   buildPayloadFromRequest,
-  detectAtlasPayloadKind,
+  detectAppleseedPayloadKind,
 } from "../index.js";
 import { DEFAULT_PLUGIN_CONFIG } from "../src/config.js";
 import { createTransport } from "../src/transport.js";
@@ -62,11 +62,11 @@ test("contract helpers normalize payloads and reject invalid values", () => {
     },
   });
 
-  assert.equal(runtimeEnvelope.contract_name, OPENCLAW_ATLAS_CONTRACT_NAME);
+  assert.equal(runtimeEnvelope.contract_name, OPENCLAW_APPLESEED_CONTRACT_NAME);
   assert.equal(runtimeEnvelope.event.event_kind, "session_feedback");
   assert.equal(runtimeEnvelope.event.score, 0.2);
   assert.equal(runtimeEnvelope.metadata.operator, "integration-test");
-  assert.equal(detectAtlasPayloadKind(runtimeEnvelope), "runtime-event");
+  assert.equal(detectAppleseedPayloadKind(runtimeEnvelope), "runtime-event");
 
   const operatorArtifact = buildOperatorSessionArtifact({
     sessionId: "plugin-test-openclaw-session",
@@ -88,7 +88,7 @@ test("contract helpers normalize payloads and reject invalid values", () => {
   });
 
   assert.equal(operatorArtifact.artifact_kind, OPENCLAW_OPERATOR_SESSION_ARTIFACT_KIND);
-  assert.equal(detectAtlasPayloadKind(operatorArtifact), "operator-session");
+  assert.equal(detectAppleseedPayloadKind(operatorArtifact), "operator-session");
 
   assert.throws(
     () =>
@@ -128,7 +128,7 @@ test("contract helpers normalize payloads and reject invalid values", () => {
   );
 });
 
-test("transport spools payloads and posts runtime events to Atlas ingest", async () => {
+test("transport spools payloads and posts runtime events to Appleseed ingest", async () => {
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-plugin-"));
   const requests = [];
   const originalFetch = globalThis.fetch;
@@ -175,7 +175,7 @@ test("transport spools payloads and posts runtime events to Atlas ingest", async
     assert.equal(requests.length, 1);
     assert.equal(requests[0].method, "POST");
     assert.equal(requests[0].url, "http://127.0.0.1:8765/v1/ingest");
-    assert.equal(JSON.parse(requests[0].body).contract_name, OPENCLAW_ATLAS_CONTRACT_NAME);
+    assert.equal(JSON.parse(requests[0].body).contract_name, OPENCLAW_APPLESEED_CONTRACT_NAME);
 
     const operatorResult = await transport.dispatchPayload(
       buildOperatorSessionArtifact({
@@ -201,22 +201,22 @@ test("transport spools payloads and posts runtime events to Atlas ingest", async
 
 test("plugin registers documented surfaces and gates export when disabled", async () => {
   const enabled = createFakeApi();
-  registerAtlasEvolutionPlugin(enabled.api);
+  registerAppleseedEvolutionPlugin(enabled.api);
 
   assert.equal(enabled.state.commands.length, 1);
   assert.equal(enabled.state.routes.length, 2);
   assert.equal(enabled.state.cli.length, 1);
-  assert.equal(enabled.state.gatewayMethods.has("atlasEvolution.status"), true);
-  assert.equal(enabled.state.gatewayMethods.has("atlasEvolution.export"), true);
+  assert.equal(enabled.state.gatewayMethods.has("appleseedEvolution.status"), true);
+  assert.equal(enabled.state.gatewayMethods.has("appleseedEvolution.export"), true);
   assert.equal(enabled.state.eventHandlers.size, 5);
 
   const disabled = createFakeApi({ enabled: false });
-  registerAtlasEvolutionPlugin(disabled.api);
+  registerAppleseedEvolutionPlugin(disabled.api);
 
   assert.equal(disabled.state.eventHandlers.size, 0);
 
   const exportResponses = [];
-  await disabled.state.gatewayMethods.get("atlasEvolution.export")({
+  await disabled.state.gatewayMethods.get("appleseedEvolution.export")({
     params: {
       kind: "session_feedback",
       sessionId: "plugin-test-session",
@@ -233,13 +233,13 @@ test("plugin registers documented surfaces and gates export when disabled", asyn
     {
       ok: false,
       payload: {
-        error: "atlas-evolution plugin is disabled; re-enable it to export payloads",
+        error: "appleseed-evolution plugin is disabled; re-enable it to export payloads",
       },
     },
   ]);
 
   const statusResponses = [];
-  disabled.state.gatewayMethods.get("atlasEvolution.status")({
+  disabled.state.gatewayMethods.get("appleseedEvolution.status")({
     respond(ok, payload) {
       statusResponses.push({ ok, payload });
     },

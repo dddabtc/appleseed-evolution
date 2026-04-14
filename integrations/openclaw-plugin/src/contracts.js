@@ -2,9 +2,9 @@ import crypto from "node:crypto";
 
 import { isPlainObject, stripUndefined, utcNow } from "./json.js";
 
-export const OPENCLAW_ATLAS_CONTRACT_NAME = "openclaw_atlas.runtime_event";
-export const OPENCLAW_ATLAS_CONTRACT_VERSION = "1.0";
-export const OPENCLAW_ATLAS_EVENT_SCHEMA_VERSION = "1.1";
+export const OPENCLAW_APPLESEED_CONTRACT_NAME = "openclaw_appleseed.runtime_event";
+export const OPENCLAW_APPLESEED_CONTRACT_VERSION = "1.0";
+export const OPENCLAW_APPLESEED_EVENT_SCHEMA_VERSION = "1.1";
 export const OPENCLAW_OPERATOR_SESSION_ARTIFACT_KIND = "openclaw_operator_session";
 export const OPENCLAW_OPERATOR_SESSION_SCHEMA_VERSION = "1.0";
 const ALLOWED_FEEDBACK_STATUSES = new Set(["success", "failure", "partial", "cancelled", "unknown"]);
@@ -134,8 +134,8 @@ function buildEnvelope(event, input = {}) {
     envelopeMetadata.operator = operator;
   }
   return stripUndefined({
-    contract_name: OPENCLAW_ATLAS_CONTRACT_NAME,
-    contract_version: OPENCLAW_ATLAS_CONTRACT_VERSION,
+    contract_name: OPENCLAW_APPLESEED_CONTRACT_NAME,
+    contract_version: OPENCLAW_APPLESEED_CONTRACT_VERSION,
     envelope_id: optionalString(input.envelopeId ?? input.envelope_id) ?? uuid(),
     recorded_at: optionalTimestamp(input.recordedAt ?? input.recorded_at, "recorded_at") ?? utcNow(),
     source: optionalString(input.source) ?? "openclaw-local",
@@ -146,7 +146,7 @@ function buildEnvelope(event, input = {}) {
 
 function buildSessionStartedEvent(input) {
   return stripUndefined({
-    schema_version: OPENCLAW_ATLAS_EVENT_SCHEMA_VERSION,
+    schema_version: OPENCLAW_APPLESEED_EVENT_SCHEMA_VERSION,
     event_id: optionalString(input.eventId ?? input.event_id) ?? uuid(),
     event_kind: "session_started",
     occurred_at: optionalTimestamp(input.occurredAt ?? input.occurred_at, "occurred_at") ?? utcNow(),
@@ -161,7 +161,7 @@ function buildSessionStartedEvent(input) {
 
 function buildSessionFeedbackEvent(input) {
   return stripUndefined({
-    schema_version: OPENCLAW_ATLAS_EVENT_SCHEMA_VERSION,
+    schema_version: OPENCLAW_APPLESEED_EVENT_SCHEMA_VERSION,
     event_id: optionalString(input.eventId ?? input.event_id) ?? uuid(),
     event_kind: "session_feedback",
     occurred_at: optionalTimestamp(input.occurredAt ?? input.occurred_at, "occurred_at") ?? utcNow(),
@@ -204,8 +204,8 @@ export function buildRuntimeEventBatch(input) {
       })
     : [];
   return stripUndefined({
-    contract_name: OPENCLAW_ATLAS_CONTRACT_NAME,
-    contract_version: OPENCLAW_ATLAS_CONTRACT_VERSION,
+    contract_name: OPENCLAW_APPLESEED_CONTRACT_NAME,
+    contract_version: OPENCLAW_APPLESEED_CONTRACT_VERSION,
     source: optionalString(input.source) ?? "openclaw-local",
     metadata: objectValue(input.envelopeMetadata ?? input.envelope_metadata ?? input.metadata),
     events,
@@ -233,7 +233,7 @@ export function buildOperatorSessionArtifact(input) {
   });
 }
 
-export function detectAtlasPayloadKind(payload) {
+export function detectAppleseedPayloadKind(payload) {
   if (Array.isArray(payload)) {
     return "runtime-event";
   }
@@ -243,7 +243,7 @@ export function detectAtlasPayloadKind(payload) {
   if (payload.artifact_kind === OPENCLAW_OPERATOR_SESSION_ARTIFACT_KIND) {
     return "operator-session";
   }
-  if (payload.contract_name === OPENCLAW_ATLAS_CONTRACT_NAME) {
+  if (payload.contract_name === OPENCLAW_APPLESEED_CONTRACT_NAME) {
     return "runtime-event";
   }
   if (Array.isArray(payload.events) || isPlainObject(payload.event)) {
@@ -253,11 +253,11 @@ export function detectAtlasPayloadKind(payload) {
 }
 
 export function buildPayloadFromRequest(request) {
-  if (detectAtlasPayloadKind(request)) {
+  if (detectAppleseedPayloadKind(request)) {
     return request;
   }
   if (!isPlainObject(request)) {
-    throw new Error("export request must be a JSON object, array, or Atlas-compatible payload");
+    throw new Error("export request must be a JSON object, array, or Appleseed-compatible payload");
   }
   if (request.payload !== undefined) {
     return buildPayloadFromRequest(request.payload);

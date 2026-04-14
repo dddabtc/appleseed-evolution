@@ -6,7 +6,7 @@ export const DEFAULT_PLUGIN_CONFIG = Object.freeze({
   enabled: true,
   baseUrl: "http://127.0.0.1:8765",
   apiKey: undefined,
-  spoolDir: ".openclaw/atlas-evolution-spool",
+  spoolDir: ".openclaw/appleseed-evolution-spool",
   retry: {
     maxAttempts: 3,
     backoffMs: 250,

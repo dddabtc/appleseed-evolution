@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Atlas Evolution will be documented in this file.
+All notable changes to Appleseed Evolution will be documented in this file.
 
 The format is inspired by Keep a Changelog and this project follows a practical, operator-focused version history.
 
@@ -20,7 +20,7 @@ The format is inspired by Keep a Changelog and this project follows a practical,
 - local HTTP ingest endpoint
 - raw inbound envelope ledger plus projected feedback ledger
 - raw → projected audit inspection surface
-- formal OpenClaw/Atlas contract
+- formal OpenClaw/Appleseed contract
 - explicit `openclaw-import` command for realistic OpenClaw operator session artifacts
 - JSON / markdown operator evidence reports
 - governance metadata for readiness, risk, and rollback context
@@ -32,7 +32,7 @@ The format is inspired by Keep a Changelog and this project follows a practical,
 - v1.2 productization roadmap document
 
 ### Changed
-- README rewritten to better explain what Atlas Evolution is, who it is for, and how to use it
+- README rewritten to better explain what Appleseed Evolution is, who it is for, and how to use it
 - Chinese README updated to match the current v1.1 product surface
 - project framing clarified as a governed local evolution system, not an autonomous self-improving agent
 
@@ -44,7 +44,7 @@ The format is inspired by Keep a Changelog and this project follows a practical,
 ## [v1.0.0] - 2026-03-13
 
 ### Added
-- local scaffold for Atlas Evolution
+- local scaffold for Appleseed Evolution
 - TOML config loading
 - deterministic skill retrieval
 - append-only feedback logging

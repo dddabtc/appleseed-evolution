@@ -4,9 +4,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from atlas_evolution.feedback_store import FeedbackStore
-from atlas_evolution.models import EvolutionReport
-from atlas_evolution.skill_bank import SkillBank
+from appleseed_evolution.feedback_store import FeedbackStore
+from appleseed_evolution.models import EvolutionReport
+from appleseed_evolution.skill_bank import SkillBank
 
 from .capability_assessor import CapabilityAssessor
 from .evaluator import EvaluationGate

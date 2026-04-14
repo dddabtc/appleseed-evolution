@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import Counter
 
-from atlas_evolution.models import EvolutionProposal, FeedbackRecord
+from appleseed_evolution.models import EvolutionProposal, FeedbackRecord
 
 
 class WorkflowDiscoverer:

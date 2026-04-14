@@ -3,10 +3,10 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
-from atlas_evolution.models import EvaluationResult, EvolutionProposal, EvolutionReport
-from atlas_evolution.skill_bank import SkillBank
+from appleseed_evolution.models import EvaluationResult, EvolutionProposal, EvolutionReport
+from appleseed_evolution.skill_bank import SkillBank
 
-GATE_ID = "atlas_local_governance_v1"
+GATE_ID = "appleseed_local_governance_v1"
 
 
 def annotate_proposals(
@@ -135,7 +135,7 @@ def build_operator_review_payload(report: EvolutionReport, skill_bank: SkillBank
 def render_governance_markdown(report: EvolutionReport) -> str:
     payload = build_governance_payload(report)
     lines = [
-        "# Atlas Evolution Governance Report",
+        "# Appleseed Evolution Governance Report",
         "",
         f"- Gate: {payload['summary']['gate_id']}",
         f"- Proposals: {payload['summary']['proposal_count']}",
@@ -170,7 +170,7 @@ def render_governance_markdown(report: EvolutionReport) -> str:
 def render_operator_review_markdown(report: EvolutionReport, skill_bank: SkillBank) -> str:
     payload = build_operator_review_payload(report, skill_bank)
     lines = [
-        "# Atlas Evolution Operator Review",
+        "# Appleseed Evolution Operator Review",
         "",
         f"- Gate: {payload['summary']['gate_id']}",
         f"- Ready now: {len(payload['review_queue']['ready'])}",
@@ -217,7 +217,7 @@ def render_operator_review_markdown(report: EvolutionReport, skill_bank: SkillBa
 
 def render_promotion_markdown(payload: dict[str, Any]) -> str:
     lines = [
-        "# Atlas Evolution Promotion Artifact",
+        "# Appleseed Evolution Promotion Artifact",
         "",
         f"- Source report: {payload.get('source_report') or 'n/a'}",
         f"- Dry run: {'yes' if payload.get('dry_run') else 'no'}",
@@ -341,8 +341,8 @@ def _build_review_labels(item: dict[str, Any]) -> list[str]:
 
 def _build_promotion_command(item: dict[str, Any]) -> str:
     if item["status"] != "approved":
-        return f"atlas-evolution promote --proposal-id {item['proposal_id']} --dry-run"
-    return f"atlas-evolution promote --proposal-id {item['proposal_id']}"
+        return f"appleseed-evolution promote --proposal-id {item['proposal_id']} --dry-run"
+    return f"appleseed-evolution promote --proposal-id {item['proposal_id']}"
 
 
 def _build_change_preview(

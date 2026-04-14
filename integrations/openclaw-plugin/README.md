@@ -1,25 +1,25 @@
-# Atlas Evolution OpenClaw Plugin v0.1
+# Appleseed Evolution OpenClaw Plugin v0.1
 
-This package is Atlas Evolution's first official OpenClaw integration.
+This package is Appleseed Evolution's first official OpenClaw integration.
 
-It lives inside the main `atlas-evolution` repository and stays intentionally thin:
+It lives inside the main `appleseed-evolution` repository and stays intentionally thin:
 
-- export Atlas-compatible payloads
+- export Appleseed-compatible payloads
 - append them to a deterministic local JSONL spool
-- optionally POST runtime-event payloads to Atlas Evolution's local `/v1/ingest`
+- optionally POST runtime-event payloads to Appleseed Evolution's local `/v1/ingest`
 - capture limited support telemetry from documented plugin hooks
 
-It does **not** try to replace Atlas Evolution as the control plane, infer missing operator intent, or run LLM calls inside the plugin.
+It does **not** try to replace Appleseed Evolution as the control plane, infer missing operator intent, or run LLM calls inside the plugin.
 
 ## What v0.1 ships
 
 - OpenClaw plugin manifest and package scaffold
-- CLI surface: `openclaw atlas-export ...`
-- Gateway RPC surface: `atlasEvolution.export`, `atlasEvolution.status`
+- CLI surface: `openclaw appleseed-export ...`
+- Gateway RPC surface: `appleseedEvolution.export`, `appleseedEvolution.status`
 - HTTP routes:
-  - `POST /atlas-evolution/export`
-  - `GET /atlas-evolution/status`
-- Auto-reply command: `/atlas-export-status`
+  - `POST /appleseed-evolution/export`
+  - `GET /appleseed-evolution/status`
+- Auto-reply command: `/appleseed-export-status`
 - Local append-only spool files:
   - `runtime-events.jsonl`
   - `operator-sessions.jsonl`
@@ -37,40 +37,40 @@ npm run verify:fixtures
 npm run pack:dry-run
 ```
 
-`enabled: false` is a hard off switch for export surfaces and support-capture hooks. The status route, Gateway status method, and `/atlas-export-status` command still report spool state so operators can confirm the plugin is intentionally disabled.
+`enabled: false` is a hard off switch for export surfaces and support-capture hooks. The status route, Gateway status method, and `/appleseed-export-status` command still report spool state so operators can confirm the plugin is intentionally disabled.
 
 ## Honest limitation
 
 The referenced OpenClaw docs clearly document plugin routes, commands, CLI, Gateway RPC, and message/compaction hook surfaces.
-They do **not** provide a complete documented operator lifecycle that already maps to Atlas Evolution's `task`, terminal `status`, and `score` semantics.
+They do **not** provide a complete documented operator lifecycle that already maps to Appleseed Evolution's `task`, terminal `status`, and `score` semantics.
 
-Because of that, v0.1 does **not** pretend it can auto-produce full Atlas feedback from raw runtime activity alone.
+Because of that, v0.1 does **not** pretend it can auto-produce full Appleseed feedback from raw runtime activity alone.
 
 Instead:
 
 - documented hooks only capture support telemetry into `support-capture.jsonl`
-- Atlas runtime-event payloads are exported explicitly through CLI/RPC/HTTP surfaces
-- Atlas `openclaw_operator_session` artifacts are exported explicitly and spooled for later `atlas-evolution openclaw-import`
+- Appleseed runtime-event payloads are exported explicitly through CLI/RPC/HTTP surfaces
+- Appleseed `openclaw_operator_session` artifacts are exported explicitly and spooled for later `appleseed-evolution openclaw-import`
 
 ## Load in OpenClaw
 
-Add the plugin path to OpenClaw and enable the `atlas-evolution` entry:
+Add the plugin path to OpenClaw and enable the `appleseed-evolution` entry:
 
 ```json5
 {
   plugins: {
     load: {
       paths: [
-        "/home/ubuntu/repos/atlas-evolution/integrations/openclaw-plugin"
+        "/home/ubuntu/repos/appleseed-evolution/integrations/openclaw-plugin"
       ]
     },
     entries: {
-      "atlas-evolution": {
+      "appleseed-evolution": {
         enabled: true,
         config: {
           enabled: true,
           baseUrl: "http://127.0.0.1:8765",
-          spoolDir: ".openclaw/atlas-evolution-spool",
+          spoolDir: ".openclaw/appleseed-evolution-spool",
           retry: {
             maxAttempts: 3,
             backoffMs: 250,
@@ -85,7 +85,7 @@ Add the plugin path to OpenClaw and enable the `atlas-evolution` entry:
 }
 ```
 
-`apiKey` is optional. When set, the plugin accepts either `Authorization: Bearer <key>` or `X-Atlas-API-Key: <key>` for its plugin-managed HTTP routes and adds the same headers to Atlas POST attempts.
+`apiKey` is optional. When set, the plugin accepts either `Authorization: Bearer <key>` or `X-Appleseed-API-Key: <key>` for its plugin-managed HTTP routes and adds the same headers to Appleseed POST attempts.
 
 ## Export surfaces
 
@@ -94,19 +94,19 @@ Add the plugin path to OpenClaw and enable the `atlas-evolution` entry:
 Show spool status:
 
 ```bash
-openclaw atlas-export status
+openclaw appleseed-export status
 ```
 
 Spool or POST a prepared payload file:
 
 ```bash
-openclaw atlas-export send-file ./payload.json
+openclaw appleseed-export send-file ./payload.json
 ```
 
 Build and send a `session_started` envelope:
 
 ```bash
-openclaw atlas-export started \
+openclaw appleseed-export started \
   --session-id demo-session-001 \
   --task "review postgres migration rollback safety" \
   --step "collect migration files" \
@@ -117,7 +117,7 @@ openclaw atlas-export started \
 Build and send a `session_feedback` envelope:
 
 ```bash
-openclaw atlas-export feedback \
+openclaw appleseed-export feedback \
   --session-id demo-session-001 \
   --task "review postgres migration rollback safety" \
   --status failure \
@@ -129,7 +129,7 @@ openclaw atlas-export feedback \
 Build and spool an `openclaw_operator_session` artifact:
 
 ```bash
-openclaw atlas-export operator-session \
+openclaw appleseed-export operator-session \
   --session-id demo-openclaw-session-001 \
   --task "review postgres migration rollback safety" \
   --started-at "2026-03-13T18:20:00+00:00" \
@@ -144,7 +144,7 @@ Status:
 
 ```json
 {
-  "method": "atlasEvolution.status"
+  "method": "appleseedEvolution.status"
 }
 ```
 
@@ -152,7 +152,7 @@ Export a runtime feedback envelope from structured params:
 
 ```json
 {
-  "method": "atlasEvolution.export",
+  "method": "appleseedEvolution.export",
   "params": {
     "kind": "session_feedback",
     "sessionId": "demo-session-001",
@@ -169,7 +169,7 @@ Export a runtime feedback envelope from structured params:
 Runtime feedback export:
 
 ```bash
-curl -X POST http://127.0.0.1:18789/atlas-evolution/export \
+curl -X POST http://127.0.0.1:18789/appleseed-evolution/export \
   -H 'Content-Type: application/json' \
   -d '{
     "kind": "session_feedback",
@@ -183,7 +183,7 @@ curl -X POST http://127.0.0.1:18789/atlas-evolution/export \
 Status:
 
 ```bash
-curl http://127.0.0.1:18789/atlas-evolution/status
+curl http://127.0.0.1:18789/appleseed-evolution/status
 ```
 
 ## Transport behavior
@@ -197,12 +197,12 @@ Runtime-event payloads:
 Operator-session artifacts:
 
 - are always appended to `operator-sessions.jsonl`
-- are **not** POSTed in v0.1 because Atlas Evolution's local HTTP surface only exposes `/v1/ingest` for runtime events
+- are **not** POSTed in v0.1 because Appleseed Evolution's local HTTP surface only exposes `/v1/ingest` for runtime events
 - should be replayed by piping a single exported artifact object, or by copying one JSONL line into its own file, then running:
 
 ```bash
-python3 -m atlas_evolution.cli openclaw-import \
-  --config demo/atlas.toml \
+python3 -m appleseed_evolution.cli openclaw-import \
+  --config demo/appleseed.toml \
   --file /path/to/single-operator-session.json
 ```
 
@@ -225,7 +225,7 @@ That means text bodies are hashed/length-counted unless transcript inclusion is 
 
 ## Fixtures and verification
 
-Example Atlas-compatible payloads live in:
+Example Appleseed-compatible payloads live in:
 
 - `fixtures/runtime_event_batch.json`
 - `fixtures/operator_session_artifact.json`

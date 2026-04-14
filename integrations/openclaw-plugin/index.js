@@ -1,12 +1,12 @@
 export { default } from "./src/plugin.js";
 export {
-  OPENCLAW_ATLAS_CONTRACT_NAME,
-  OPENCLAW_ATLAS_CONTRACT_VERSION,
+  OPENCLAW_APPLESEED_CONTRACT_NAME,
+  OPENCLAW_APPLESEED_CONTRACT_VERSION,
   OPENCLAW_OPERATOR_SESSION_ARTIFACT_KIND,
   buildOperatorSessionArtifact,
   buildPayloadFromRequest,
   buildRuntimeEventBatch,
   buildSessionFeedbackEnvelope,
   buildSessionStartedEnvelope,
-  detectAtlasPayloadKind,
+  detectAppleseedPayloadKind,
 } from "./src/contracts.js";

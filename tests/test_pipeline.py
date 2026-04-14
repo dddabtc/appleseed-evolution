@@ -5,9 +5,9 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from atlas_evolution.config import load_config
-from atlas_evolution.evolution.governance import build_operator_review_payload
-from atlas_evolution.runtime.orchestrator import AtlasOrchestrator
+from appleseed_evolution.config import load_config
+from appleseed_evolution.evolution.governance import build_operator_review_payload
+from appleseed_evolution.runtime.orchestrator import AppleseedOrchestrator
 
 
 def write_skill(path: Path, payload: dict[str, object]) -> None:
@@ -33,7 +33,7 @@ class PipelineTests(unittest.TestCase):
                     "instructions": ["focus on real bugs"],
                 },
             )
-            config_path = root / "atlas.toml"
+            config_path = root / "appleseed.toml"
             config_path.write_text(
                 (
                     '[paths]\n'
@@ -46,7 +46,7 @@ class PipelineTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            orchestrator = AtlasOrchestrator(load_config(config_path))
+            orchestrator = AppleseedOrchestrator(load_config(config_path))
 
             route_one = orchestrator.route_task("review postgres migration rollback safety")
             route_two = orchestrator.route_task("review postgres indexing migration")
@@ -132,7 +132,7 @@ class PipelineTests(unittest.TestCase):
             )
             self.assertIn("ready", prompt_review["review_labels"])
             self.assertIn("rollback_sensitive", prompt_review["review_labels"])
-            self.assertIn("atlas-evolution promote --proposal-id prompt-code_review", prompt_review["promotion_command"])
+            self.assertIn("appleseed-evolution promote --proposal-id prompt-code_review", prompt_review["promotion_command"])
             self.assertIn("---", prompt_review["change_preview"]["diff"])
 
             dry_run = orchestrator.pipeline.build_promotion_artifact(

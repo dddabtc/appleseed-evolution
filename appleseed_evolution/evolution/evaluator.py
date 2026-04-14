@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from atlas_evolution.models import EvaluationResult, EvolutionProposal
+from appleseed_evolution.models import EvaluationResult, EvolutionProposal
 
 
 class EvaluationGate:

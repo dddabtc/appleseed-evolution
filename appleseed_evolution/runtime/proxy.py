@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from typing import Any
 
-from atlas_evolution.runtime.orchestrator import AtlasOrchestrator
+from appleseed_evolution.runtime.orchestrator import AppleseedOrchestrator
 
 
 def _json_response(handler: BaseHTTPRequestHandler, status: HTTPStatus, payload: dict[str, Any]) -> None:
@@ -26,8 +26,8 @@ def _parse_body(handler: BaseHTTPRequestHandler) -> Any:
         raise ValueError(f"invalid JSON body: {error.msg}") from error
 
 
-def make_handler(orchestrator: AtlasOrchestrator) -> type[BaseHTTPRequestHandler]:
-    class AtlasProxyHandler(BaseHTTPRequestHandler):
+def make_handler(orchestrator: AppleseedOrchestrator) -> type[BaseHTTPRequestHandler]:
+    class AppleseedProxyHandler(BaseHTTPRequestHandler):
         def log_message(self, format: str, *args: object) -> None:
             return
 
@@ -101,10 +101,10 @@ def make_handler(orchestrator: AtlasOrchestrator) -> type[BaseHTTPRequestHandler
                 return
             _json_response(self, HTTPStatus.NOT_FOUND, {"error": "not_found"})
 
-    return AtlasProxyHandler
+    return AppleseedProxyHandler
 
 
-def run_server(orchestrator: AtlasOrchestrator) -> None:
+def run_server(orchestrator: AppleseedOrchestrator) -> None:
     host = orchestrator.config.runtime.host
     port = orchestrator.config.runtime.port
     server = ThreadingHTTPServer((host, port), make_handler(orchestrator))

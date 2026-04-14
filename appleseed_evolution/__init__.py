@@ -1,4 +1,4 @@
-"""Atlas Evolution v1."""
+"""Appleseed Evolution v1."""
 
 __all__ = ["__version__"]
 

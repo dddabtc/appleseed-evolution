@@ -2,18 +2,18 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from atlas_evolution.evolution.capability_assessor import CapabilityAssessor
-from atlas_evolution.evolution.evaluator import EvaluationGate
-from atlas_evolution.evolution.governance import annotate_proposals, build_governance_summary
-from atlas_evolution.evolution.prompt_evolver import PromptEvolver
-from atlas_evolution.evolution.workflow_discoverer import WorkflowDiscoverer
-from atlas_evolution.models import EvolutionReport, OperatorEvidenceReport, OperatorEvolutionSignal
-from atlas_evolution.openclaw_contract import (
-    OpenClawAtlasEventEnvelope,
-    OpenClawAtlasSessionFeedback,
-    OpenClawAtlasSessionStarted,
+from appleseed_evolution.evolution.capability_assessor import CapabilityAssessor
+from appleseed_evolution.evolution.evaluator import EvaluationGate
+from appleseed_evolution.evolution.governance import annotate_proposals, build_governance_summary
+from appleseed_evolution.evolution.prompt_evolver import PromptEvolver
+from appleseed_evolution.evolution.workflow_discoverer import WorkflowDiscoverer
+from appleseed_evolution.models import EvolutionReport, OperatorEvidenceReport, OperatorEvolutionSignal
+from appleseed_evolution.openclaw_contract import (
+    OpenClawAppleseedEventEnvelope,
+    OpenClawAppleseedSessionFeedback,
+    OpenClawAppleseedSessionStarted,
 )
-from atlas_evolution.skill_bank import SkillBank
+from appleseed_evolution.skill_bank import SkillBank
 
 
 class RuntimeSessionReportAdapter:
@@ -28,7 +28,7 @@ class RuntimeSessionReportAdapter:
 
     def build_report(
         self,
-        envelopes: Iterable[OpenClawAtlasEventEnvelope],
+        envelopes: Iterable[OpenClawAppleseedEventEnvelope],
         session_id: str | None = None,
     ) -> OperatorEvidenceReport:
         envelope_list = list(envelopes)
@@ -49,10 +49,10 @@ class RuntimeSessionReportAdapter:
             raise ValueError(f"No runtime event envelopes were found for session '{effective_session_id}'.")
 
         started = [
-            item for item in session_envelopes if isinstance(item.event, OpenClawAtlasSessionStarted)
+            item for item in session_envelopes if isinstance(item.event, OpenClawAppleseedSessionStarted)
         ]
         feedback = [
-            item for item in session_envelopes if isinstance(item.event, OpenClawAtlasSessionFeedback)
+            item for item in session_envelopes if isinstance(item.event, OpenClawAppleseedSessionFeedback)
         ]
         latest_feedback = feedback[-1] if feedback else None
         primary_event = latest_feedback.event if latest_feedback is not None else session_envelopes[-1].event
@@ -165,7 +165,7 @@ class RuntimeSessionReportAdapter:
 
     def render_markdown(self, report: OperatorEvidenceReport) -> str:
         lines = [
-            "# Atlas Runtime Session Report",
+            "# Appleseed Runtime Session Report",
             "",
             f"- Session ID: {report.session_id}",
             f"- Task: {report.task}",
@@ -282,8 +282,8 @@ class RuntimeSessionReportAdapter:
 
     @staticmethod
     def _build_operator_handoff(
-        session_envelopes: list[OpenClawAtlasEventEnvelope],
-        latest_feedback: OpenClawAtlasEventEnvelope | None,
+        session_envelopes: list[OpenClawAppleseedEventEnvelope],
+        latest_feedback: OpenClawAppleseedEventEnvelope | None,
     ) -> dict[str, object]:
         metadata: dict[str, object] = {}
         for envelope in session_envelopes:
